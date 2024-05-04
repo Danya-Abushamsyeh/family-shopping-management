@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import firebase from './../firebase';
+import { auth, createUserDocument } from './../firebase'; 
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
 
   const auth = firebase.auth();
 
   const handleSignUp = async () => {
-      try {
-          await auth.createUserWithEmailAndPassword(email, password);
-          // If login successful, navigate to the next screen or perform desired action
-          navigation.navigate('Home'); // Example: Navigate to Home screen
-      } catch (error) {
-          // Handle login errors
-          Alert.alert('Login Error', error.message);
-      }
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+      
+      await createUserDocument(user, { displayName }); 
+
+      navigation.navigate('Home');
+    } catch (error) {
+      Alert.alert('Sign Up Error', error.message);
+    }
   };
 
   const handleLogin = async () => {
@@ -25,7 +29,6 @@ const LoginScreen = ({ navigation }) => {
         // If login successful, navigate to the next screen or perform desired action
         navigation.navigate('Profile'); // Example: Navigate to Home screen
     } catch (error) {
-        // Handle login errors
         Alert.alert('Login Error', error.message);
     }
 };
@@ -46,7 +49,12 @@ const LoginScreen = ({ navigation }) => {
         value={email}
         onChangeText={setEmail}
       />
-
+      <TextInput
+          style={styles.input}
+          placeholder="שם משתמש"
+          value={displayName}
+          onChangeText={setDisplayName}
+      />
       <TextInput
         style={styles.input}
         placeholder="סיסמא"
