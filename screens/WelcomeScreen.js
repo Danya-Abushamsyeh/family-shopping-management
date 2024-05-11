@@ -5,7 +5,12 @@ import { useNavigation } from '@react-navigation/native';
 const WelcomeScreen = () => {
     const navigation = useNavigation();
     const handleLetsGetStartedPress = () => {
+        // navigation.navigate('Login');
         navigation.navigate('TabNavigation');
+
+      };
+      const handleLsignup = () => {
+        navigation.navigate('signup');
       };
   return (
 <View style={{alignItems:'center'}}>
@@ -29,6 +34,12 @@ const WelcomeScreen = () => {
            בואו נתחיל           
            </Text>
         </TouchableOpacity>
+
+        <View style={styles.navigation}>
+          <TouchableOpacity style={styles.navItem} onPress={handleLsignup}>
+            <Text>אין לך חשבון? הירשם</Text>
+          </TouchableOpacity>
+        </View>
         </View>
     </View>
   )
@@ -54,7 +65,13 @@ const styles = StyleSheet.create({
       borderRadius:99,
       marginTop:60
 
-    }
+    },
+    navigation: {
+      flexDirection: 'row',
+    },
+    navItem: {
+      marginLeft:250
+    },
 
 
 })

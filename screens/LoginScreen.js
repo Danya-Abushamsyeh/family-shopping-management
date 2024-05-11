@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import firebase from './../firebase';
 import { auth, createUserDocument } from './../firebase'; 
+// import TabNavigation from '../Navigations/TabNavigation' 
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -9,25 +10,27 @@ const LoginScreen = ({ navigation }) => {
   const [displayName, setDisplayName] = useState('');
 
   const auth = firebase.auth();
-
-  const handleSignUp = async () => {
-    try {
-      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-      const user = userCredential.user;
-      
-      await createUserDocument(user, { displayName }); 
-
-      navigation.navigate('Home');
-    } catch (error) {
-      Alert.alert('Sign Up Error', error.message);
-    }
+  const handleLsign = () => {
+    navigation.navigate('signup');
   };
+
+  // const handleSignUp = async () => {
+  //   try {
+  //     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+  //     const user = userCredential.user;
+      
+  //     await createUserDocument(user, { displayName }); 
+
+  //     navigation.navigate('Home');
+  //   } catch (error) {
+  //     Alert.alert('Sign Up Error', error.message);
+  //   }
+  // };
 
   const handleLogin = async () => {
     try {
         await auth.signInWithEmailAndPassword(email, password);
-        // If login successful, navigate to the next screen or perform desired action
-        navigation.navigate('Profile'); // Example: Navigate to Home screen
+        navigation.navigate('Home'); 
     } catch (error) {
         Alert.alert('Login Error', error.message);
     }
@@ -69,13 +72,20 @@ const LoginScreen = ({ navigation }) => {
          <Text style={styles.buttonText}>התחברות</Text>
        </TouchableOpacity>
 
-       <TouchableOpacity 
+       <View style={styles.navigation}>
+          <TouchableOpacity style={styles.navItem} onPress={handleLsign}>
+            <Text>אין לך חשבון? הירשם</Text>
+          </TouchableOpacity>
+        </View>
+
+       {/* <TouchableOpacity 
         style={[styles.button, styles.buttonOutline]} 
         onPress={handleSignUp}>
         <Text style={styles.buttonOutlineText}>הירשם</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       </View>
     </View>
+
     </KeyboardAvoidingView>
   )
 }
@@ -87,7 +97,7 @@ const styles = StyleSheet.create({
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#f0f0f0', // Background color added
+      backgroundColor: '#f0f0f0', 
     },
     inputContainer: {
         // flex: 1,
@@ -97,11 +107,11 @@ const styles = StyleSheet.create({
         },
     title: {
       color: '#635A5A',
-      marginTop:100,
+      marginTop:180,
       fontSize: 24,
       fontWeight: 'bold',
       marginBottom: 20,
-      textAlign: 'center', // Center text alignment
+      textAlign: 'center', 
     },
     input: {
       height: 40,
@@ -140,10 +150,10 @@ const styles = StyleSheet.create({
       marginTop: 15,
       backgroundColor: 'transparent',
       borderWidth: 1,
-      borderColor: '#635A5A', // Specified color for the button border
+      borderColor: '#635A5A', 
     },
     buttonOutlineText: {
-      color: '#635A5A', // Specified color for the button text
+      color: '#635A5A', 
       fontSize: 14,
       fontWeight: 'bold',
     },

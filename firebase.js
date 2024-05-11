@@ -74,5 +74,38 @@ export const getItemsBySupermarket = async (supermarket) => {
   }
 };
 
+export const createShoppingList = async (userEmail, listName, items) => {
+  try {
+    const docRef = await firestore.collection('shoppingLists').doc(userEmail).collection('lists').add({
+      listName,
+      items,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating shopping list:', error);
+    return null;
+  }
+};
 
+
+export const deleteShoppingList = async (userEmail, listId) => {
+  try {
+    await firestore.collection('shoppingLists').doc(userEmail).collection('lists').doc(listId).delete();
+    return true;
+  } catch (error) {
+    console.error('Error deleting shopping list:', error);
+    return false;
+  }
+};
+
+export const updateShoppingList = async (userEmail, listId, newData) => {
+  try {
+    await firestore.collection('shoppingLists').doc(userEmail).collection('lists').doc(listId).update(newData);
+    return true;
+  } catch (error) {
+    console.error('Error updating shopping list:', error);
+    return false;
+  }
+};
 export default firebase;

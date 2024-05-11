@@ -1,5 +1,5 @@
 import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
-import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faPlus, faList } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { useNavigation } from '@react-navigation/native';
 import { getItemsBySupermarket } from './../firebase';
@@ -14,26 +14,50 @@ const supermarkets = [
 ];
 
 const ItemsScreen = ({ route }) => {
-// const ItemsScreen = () => {
   const navigation = useNavigation();
   const { supermarketName } = route.params;
   const [items, setItems] = useState([]);
-  const [selectedSupermarket, setSelectedSupermarket] = useState(''); // State to track the selected supermarket
+  const [searchQuery, setSearchQuery] = useState('');
+  const [shoppingList, setShoppingList] = useState([]);
 
   useEffect(() => {
-    // Fetch items for the selected supermarket
     const fetchItems = async () => {
-      // Assuming getItemsBySupermarket is a function to fetch items from the database
       const itemsData = await getItemsBySupermarket(supermarketName);
       setItems(itemsData);
     };
     fetchItems();
-  }, [supermarketName]);// Fetch items whenever selectedSupermarket changes
+  }, [supermarketName]);
+
+  const filteredItems = items.filter(item =>
+    item.ItemName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const addToShoppingList = (item) => {
+    const existingItem = shoppingList.find(i => i.ItemCode === item.ItemCode);
+    if (existingItem) {
+      // If item already exists, update its quantity
+      const updatedList = shoppingList.map(i =>
+        i.ItemCode === item.ItemCode ? { ...i, quantity: (i.quantity || 1) + 1 } : i
+      );
+      setShoppingList(updatedList);
+    } else {
+      // If item does not exist, add it with quantity 1
+      setShoppingList(prevList => [...prevList, { ...item, quantity: 1 }]);
+    }
+  };
+  
+
+  const navigateToShoppingList = () => {
+    navigation.navigate('ShoppingList', { shoppingList });
+  };
 
   const renderSupermarketItem = ({ item }) => (
     <View style={styles.itemContainer}>
       <Text style={styles.itemName}>{item.ItemName}</Text>
       <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
+      <TouchableOpacity onPress={() => addToShoppingList(item)}>
+        <FontAwesomeIcon icon={faPlus} size={24} color="blue" />
+      </TouchableOpacity>
     </View>
   );
   
@@ -45,26 +69,43 @@ const ItemsScreen = ({ route }) => {
 
   return (
     <View >
-      
       <View style={styles.logoContainer}>
-      <View style={styles.navigation}>
+        <View style={styles.navigation}>
           <TouchableOpacity style={styles.navItem} onPress={() => alert('בחר מהרשימה למטה או הקלד בחיפוש את שם המוצר שברצונך להוסיף לרשימה שלך')}>
             <Text>עזרה</Text>
           </TouchableOpacity>
+          
         </View>
-       <View style={styles.searchContainer}>
-        <TouchableOpacity style={styles.searchButton} onPress={() => alert('Searching...')}>
-          <FontAwesomeIcon icon={faSearch} />
-        </TouchableOpacity>
-        <TextInput style={styles.searchInput} placeholder="חפש..." />
-      </View>
-      <TouchableOpacity  onPress={() =>navigation.navigate('Home') }>
-      <Image source={require('./../assets/images/Image.jpg')} style={styles.logo} />   
-      </TouchableOpacity>
+        <View style={styles.searchContainer}>
+          <TouchableOpacity style={styles.searchButton} onPress={() => alert('Searching...')}>
+            <FontAwesomeIcon icon={faSearch} />
+          </TouchableOpacity>
+         <TextInput 
+          style={styles.searchInput} 
+          placeholder="חפש..." 
+          onChangeText={setSearchQuery}
+          value={searchQuery} />
+       </View>
 
+      <TouchableOpacity  onPress={() =>navigation.navigate('Home') }>
+        <Image source={require('./../assets/images/Image.jpg')} style={styles.logo} />   
+      </TouchableOpacity>
       </View>
-      <Text style={styles.supermarketName}>{supermarketName}</Text>
-      
+      <Text style={styles.supermarketName}>רשימת המוצרים</Text>
+      <TouchableOpacity style={styles.navItem} onPress={navigateToShoppingList}>
+            <FontAwesomeIcon icon={faList} size={24} color="blue" />
+      </TouchableOpacity>
+      <Text></Text>
+
+      <FlatList
+        data={filteredItems}
+        renderItem={renderSupermarketItem}
+        keyExtractor={item => item.id.toString()}
+      />
+      <View>
+      <FlatList />
+      </View>
+
       <FlatList
         data={items}
         renderItem={renderSupermarketItem}
@@ -106,8 +147,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   searchInput: {
-    flex: 1,
-    paddingVertical: 8,
+    // flex: 1,
+    // paddingVertical: 8,
     marginLeft: 140,
 
   },
@@ -132,7 +173,8 @@ const styles = StyleSheet.create({
     marginTop: 5,
     textAlign: 'center',
     fontWeight: 'bold',
-    color:'#464444'
+    color:'#464444',
+    fontSize:18
   },
   itemContainer: {
     backgroundColor: '#fff',
@@ -153,67 +195,5 @@ const styles = StyleSheet.create({
   },
 });
 
-  // logo: {
-  //   width: 50,
-  //   height: 50,
-  //   marginRight: 20,
-  // },
-  // logoContainer: {
-  //   paddingVertical: 5,
-  //   backgroundColor: '#e9a1a1',
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   justifyContent: 'space-between',
-  // },
-  // navigation: {
-  //   flexDirection: 'row',
-  // },
-  // navItem: {
-  //   marginLeft: 20,
-  // },
-  // searchContainer: {
-  //   width: 230,
-  //   height: 30,
-  //   flexDirection: 'row',
-  //   backgroundColor: '#fff',
-  //   borderRadius: 5,
-  //   paddingHorizontal: 8,
-  //   alignItems: 'center',
-  //   marginTop: 6,
-  // },
-  // searchInput: {
-  //   flex: 1,
-  //   paddingVertical: 8,
-  //   marginLeft: 140,
-
-  // },
-  // searchButton: {
-  //   padding: 10,
-  // },
-  // // container: {
-  // //   flex: 1,
-  // //   backgroundColor: '#fff',
-  // //   padding: 20,
-  // // },
-  // supermarketName: {
-  //   fontSize: 20,
-  //   fontWeight: 'bold',
-  //   marginBottom: 20,
-  // },
-  // itemContainer: {
-  //   backgroundColor: '#f0f0f0',
-  //   padding: 10,
-  //   marginBottom: 10,
-  //   borderRadius: 5,
-  // },
-  // itemName: {
-  //   fontWeight: 'bold',
-  //   fontSize: 16,
-  // },
-  // itemPrice: {
-  //   color: '#888',
-  //   fontSize: 14,
-  // },
-// });
 
 export default ItemsScreen;

@@ -19,7 +19,6 @@ const HomeScreen = () => {
   const [selectedSupermarket, setSelectedSupermarket] = useState(''); // State to track the selected supermarket
 
   useEffect(() => {
-    // Fetch items when the selectedSupermarket changes
     if (selectedSupermarket) {
       const fetchItems = async () => {
         const itemsData = await getItemsBySupermarket(selectedSupermarket);
@@ -27,7 +26,7 @@ const HomeScreen = () => {
       };
       fetchItems();
     }
-  }, [selectedSupermarket]); // Fetch items whenever selectedSupermarket changes
+  }, [selectedSupermarket]);
 
   const renderSupermarketItem = ({ item }) => (
    <TouchableOpacity style={styles.itemContainer} onPress={() => handleChoose(item.name)}>
@@ -47,11 +46,11 @@ const HomeScreen = () => {
   };
   
   return (
-    <View >
+    <View>
       
       <View style={styles.logoContainer}>
       <View style={styles.navigation}>
-          <TouchableOpacity style={styles.navItem} onPress={() => alert('About')}>
+          <TouchableOpacity style={styles.navItem} onPress={() => alert('בחר את הסופרמרקט אליו תלך או הקלד בחיפוש את שם המוצר שברצונך להוסיף לרשימה שלך')}>
             <Text>עזרה</Text>
           </TouchableOpacity>
         </View>
@@ -61,6 +60,7 @@ const HomeScreen = () => {
         </TouchableOpacity>
         <TextInput style={styles.searchInput} placeholder="חפש..." />
       </View>
+       
       <Image source={require('./../assets/images/Image.jpg')} style={styles.logo} />
       </View>
       <Text style={styles.supermarketName}>בואו להכין את רשימת הקניות שלנו. בחר את הסופרמרקט אליו תלך</Text>
@@ -76,9 +76,11 @@ const HomeScreen = () => {
         renderItem={renderSupermarketItem}
         keyExtractor={(item) => item.ItemCode} // Use a unique key for each item
       /> */}
+
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
 
@@ -93,6 +95,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop:35
   },
   navigation: {
     flexDirection: 'row',
