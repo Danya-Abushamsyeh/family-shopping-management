@@ -1,9 +1,8 @@
-import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
-import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { getItemsBySupermarket } from './../firebase';
+import { getItemsBySupermarket, saveShoppingList } from './../firebase'; // Assuming you have a function to save data to Firestore
 import React, { useEffect, useState } from 'react';
+import { FontAwesome } from '@expo/vector-icons';
 
 const supermarkets = [
   { id: 1, name: 'ramilavi', imageUrl: require('./../assets/images/rami.jpg') },
@@ -11,12 +10,15 @@ const supermarkets = [
   { id: 3, name: 'shupersal', imageUrl: require('./../assets/images/shupersl.jpeg') },
   { id: 4, name: 'tivtaam', imageUrl: require('./../assets/images/tiv.jpg') },
   { id: 5, name: 'vectory', imageUrl: require('./../assets/images/vic.jpg') },
+  { id: 6, name: 'Yohananof', imageUrl: require('./../assets/images/images.png') },
+  { id: 7},
+
 ];
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [items, setItems] = useState([]);
-  const [selectedSupermarket, setSelectedSupermarket] = useState(''); // State to track the selected supermarket
+  const [selectedSupermarket, setSelectedSupermarket] = useState('');
 
   useEffect(() => {
     if (selectedSupermarket) {
@@ -32,37 +34,31 @@ const HomeScreen = () => {
    <TouchableOpacity style={styles.itemContainer} onPress={() => handleChoose(item.name)}>
       <Image source={item.imageUrl} style={styles.supermarketImage} />
       <Text style={styles.itemName}>{item.ItemName}</Text>
-      {/* <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text> */}
     </TouchableOpacity>
   );
   
-  // const handleChoose = (supermarketName) => {
-  //   // setSelectedSupermarket(supermarketName);
-  //   navigation.navigate('Items');
-
-  // };
   const handleChoose = (supermarketName) => {
-    navigation.navigate('Items', { supermarketName });
+    navigation.navigate('Items', { supermarketName});
   };
   
+
   return (
     <View>
-      
       <View style={styles.logoContainer}>
-      <View style={styles.navigation}>
+        <View style={styles.navigation}>
           <TouchableOpacity style={styles.navItem} onPress={() => alert('בחר את הסופרמרקט אליו תלך או הקלד בחיפוש את שם המוצר שברצונך להוסיף לרשימה שלך')}>
             <Text>עזרה</Text>
           </TouchableOpacity>
         </View>
-       <View style={styles.searchContainer}>
-        <TouchableOpacity style={styles.searchButton} onPress={() => alert('Searching...')}>
-          <FontAwesomeIcon icon={faSearch} />
-        </TouchableOpacity>
-        <TextInput style={styles.searchInput} placeholder="חפש..." />
+        <View style={styles.searchContainer}>
+          <TouchableOpacity style={styles.searchButton} onPress={() => alert('Searching...')}>
+            <FontAwesome name='search' /> 
+          </TouchableOpacity>
+          <TextInput style={styles.searchInput} placeholder="חפש..." />
+        </View>
+        <Image source={require('./../assets/images/Image.jpg')} style={styles.logo} />
       </View>
-       
-      <Image source={require('./../assets/images/Image.jpg')} style={styles.logo} />
-      </View>
+      
       <Text style={styles.supermarketName}>בואו להכין את רשימת הקניות שלנו. בחר את הסופרמרקט אליו תלך</Text>
       <FlatList
         data={supermarkets}
@@ -71,16 +67,10 @@ const HomeScreen = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.supermarketsContainer}
       />
-      {/* <FlatList
-        data={items}
-        renderItem={renderSupermarketItem}
-        keyExtractor={(item) => item.ItemCode} // Use a unique key for each item
-      /> */}
-
+   
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
 
@@ -88,20 +78,24 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     marginRight: 20,
+    marginTop:39
+
   },
   logoContainer: {
+    height: 90,
     paddingVertical: 5,
     backgroundColor: '#e9a1a1',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop:35
+    // marginTop:30
   },
   navigation: {
     flexDirection: 'row',
   },
   navItem: {
     marginLeft: 20,
+    marginTop:39
   },
   searchContainer: {
     width: 230,
@@ -111,7 +105,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 8,
     alignItems: 'center',
-    marginTop: 6,
+    marginTop:39
   },
   searchInput: {
     flex: 1,
@@ -119,11 +113,9 @@ const styles = StyleSheet.create({
     marginLeft: 140,
 
   },
-  searchButton: {
-    padding: 10,
-  },
   supermarketsContainer: {
     marginTop: 20,
+    marginBottom:50
   },
   supermarketItem: {
     marginRight: 10,
@@ -159,6 +151,7 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 14,
   },
+
 });
 
 export default HomeScreen;

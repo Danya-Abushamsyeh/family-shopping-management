@@ -1,36 +1,20 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import firebase from './../firebase';
-import { auth, createUserDocument } from './../firebase'; 
-// import TabNavigation from '../Navigations/TabNavigation' 
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
 
   const auth = firebase.auth();
   const handleLsign = () => {
     navigation.navigate('signup');
   };
 
-  // const handleSignUp = async () => {
-  //   try {
-  //     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-  //     const user = userCredential.user;
-      
-  //     await createUserDocument(user, { displayName }); 
-
-  //     navigation.navigate('Home');
-  //   } catch (error) {
-  //     Alert.alert('Sign Up Error', error.message);
-  //   }
-  // };
-
   const handleLogin = async () => {
     try {
         await auth.signInWithEmailAndPassword(email, password);
-        navigation.navigate('Home'); 
+        navigation.navigate('tab'); 
     } catch (error) {
         Alert.alert('Login Error', error.message);
     }
@@ -47,17 +31,12 @@ const LoginScreen = ({ navigation }) => {
       <TextInput
         style={styles.input}
         placeholder="מייל"
-        // keyboardType="email-address"
-        // autoCapitalize="none"
+        keyboardType="email-address"
+        autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-          style={styles.input}
-          placeholder="שם משתמש"
-          value={displayName}
-          onChangeText={setDisplayName}
-      />
+
       <TextInput
         style={styles.input}
         placeholder="סיסמא"
@@ -78,11 +57,6 @@ const LoginScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-       {/* <TouchableOpacity 
-        style={[styles.button, styles.buttonOutline]} 
-        onPress={handleSignUp}>
-        <Text style={styles.buttonOutlineText}>הירשם</Text>
-      </TouchableOpacity> */}
       </View>
     </View>
 

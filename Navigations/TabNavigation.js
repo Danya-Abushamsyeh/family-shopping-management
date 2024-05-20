@@ -1,49 +1,56 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StyleSheet } from 'react-native';
-import React from 'react';
-
+import { FontAwesome } from '@expo/vector-icons'; 
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import ShoppingList from '../screens/ShoppingList'; // Corrected import statement
-import { faList, faUser, faHome, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import ItemsScreen from '../screens/ItemsScreen';
+import EditProfileScreen from '../screens/EditProfile';
+import ShoppingList from '../screens/ShoppingList';
+import signup from '../screens/Signup';
+import React, { useState } from 'react';
+import ListsScreen from '../screens/ListsScreen';
 
 const Tab = createBottomTabNavigator();
 
 const TabNavigation = () => {
+  const [loggedIn, setLoggedIn] = useState(false);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ size, focused }) => {
-          let iconComponent;
+          let iconName;
           const iconColor = focused ? '#da6363' : '#808080'; 
 
-          if (route.name === 'Login') {
-            iconComponent = <FontAwesomeIcon icon={faSignInAlt} style={[styles.icon, { color: iconColor }]} size={size} />;
-          } 
-          else if (route.name === 'ShoppingList') {
-            iconComponent = <FontAwesomeIcon icon={faList} style={[styles.icon, { color: iconColor }]} size={size} />;
-          } 
-          else if (route.name === 'Home') {
-            iconComponent = <FontAwesomeIcon icon={faHome} style={[styles.icon, { color: iconColor }]} size={size} />;
-          } 
-          else if (route.name === 'Profile') {
-            iconComponent = <FontAwesomeIcon icon={faUser} style={[styles.icon, { color: iconColor }]} size={size} />;
+          if (route.name === 'התחברות') {
+            iconName = focused ? 'sign-in' : 'sign-in'; 
+          }else 
+          if (route.name === 'בית') {
+            iconName = focused ? 'home' : 'home'; 
+          } else if (route.name === 'פרופיל') {
+            iconName = focused ? 'user' : 'user'; 
           }
-          return iconComponent;
+          return <FontAwesome name={iconName} size={size} color={iconColor}  />;
         },
       })}
+      
     >
-      <Tab.Screen name='Login' component={LoginScreen} options={{ headerShown: false }}/>
-      <Tab.Screen name='ShoppingList' component={ShoppingList} options={{ headerShown: false }}/>
-      <Tab.Screen name='Home' component={HomeScreen} options={{ headerShown: false }}/>
-      <Tab.Screen name='Profile' component={ProfileScreen} options={{ headerShown: false }}/>
+      
+      {/* <Tab.Screen name='התחברות' component={LoginScreen} options={{ headerShown: false,tabBarItemStyle:{paddingHorizontal:70, paddingStart:63} }}/> */}
+      <Tab.Screen name='בית' component={HomeScreen} options={{ headerShown: false,tabBarItemStyle:{paddingHorizontal:100}}} />
+      <Tab.Screen name='פרופיל' component={ProfileScreen} options={{ headerShown: false,tabBarIconStyle:{left:40},tabBarLabelStyle:{left:40}}}/>
+      
+      <Tab.Screen name='EditProfile' component={EditProfileScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300} }}/>
+      <Tab.Screen name='signup' component={signup} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
+      <Tab.Screen name='Items' component={ItemsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
+      <Tab.Screen name='Lists' component={ListsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
+      <Tab.Screen name='ShoppingList' component={ShoppingList} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
 
     </Tab.Navigator>
   );
 };
 
-const styles = StyleSheet.create({});
-
 export default TabNavigation;
+
+const styles = StyleSheet.create({});

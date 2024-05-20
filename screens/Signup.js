@@ -20,8 +20,8 @@ const Signup = ({ navigation }) => {
       const user = userCredential.user;
       
       await createUserDocument(user, { displayName }); 
-
-      navigation.navigate('Home');
+      Alert.alert('ברוכים הבאים! בוא נכין רשימת הקניות של המשפחה');
+      navigation.navigate('tab');
     } catch (error) {
       Alert.alert('Sign Up Error', error.message);
     }

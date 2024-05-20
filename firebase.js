@@ -21,6 +21,8 @@ if (!firebase.apps.length) {
 
 export const auth = firebase.auth();
 export const firestore = firebase.firestore();
+export const database = firebase.database();
+
 export const createUserDocument = async (user, additionalData) => {
   if (!user) return;
 
@@ -45,7 +47,6 @@ export const createUserDocument = async (user, additionalData) => {
   return getUserDocument(user.uid);
 };
 
-// Function to get user document from Firestore
 export const getUserDocument = async (uid) => {
   if (!uid) return null;
 
@@ -76,10 +77,12 @@ export const getItemsBySupermarket = async (supermarket) => {
 
 export const createShoppingList = async (userEmail, listName, items) => {
   try {
-    const docRef = await firestore.collection('shoppingLists').doc(userEmail).collection('lists').add({
+    const docRef = await firestore.collection('shoppingLists').add({
       listName,
       items,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      userEmail,
+      
     });
     return docRef.id;
   } catch (error) {
@@ -87,25 +90,73 @@ export const createShoppingList = async (userEmail, listName, items) => {
     return null;
   }
 };
+// export const createShoppingList = async (listName, userId) => {
+//   try {
+//     const listRef = firestore.collection('shoppingLists').doc();
+//     await listRef.set({
+//       name: listName,
+//       items: [],
+//       collaborators: [userId]
+//     });
+//     return listRef.id;
+//   } catch (error) {
+//     console.error('Error creating shopping list', error);
+//     return null;
+//   }
+// };
+// export const createShoppingList = async (userEmail, listName, items) => {
+//   try {
+//     await firestore.collection('shoppingLists').doc(userEmail).set({
+//       listName,
+//       items,
+//       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+//     });
+//     return userEmail; // Return the user's email as the ID
+//   } catch (error) {
+//     console.error('Error creating shopping list:', error);
+//     return null;
+//   }
+// };
 
+// export const deleteShoppingList = async (userEmail, listId) => {
+//   try {
+//     await firestore.collection('shoppingLists').doc(userEmail).collection('lists').doc(listId).delete();
+//     return true;
+//   } catch (error) {
+//     console.error('Error deleting shopping list:', error);
+//     return false;
+//   }
+// };
 
-export const deleteShoppingList = async (userEmail, listId) => {
+// export const updateShoppingList = async (listId, updatedList) => {
+//   try {
+//     const listRef = firestore.collection('shoppingLists').doc(listId);
+//     await listRef.update({ items: updatedList });
+//   } catch (error) {
+//     console.error('Error updating shopping list', error);
+//   }
+// };
+// export const updateShoppingList = async (userEmail, listId, newData) => {
+//   try {
+//     await firestore.collection('shoppingLists').doc(userEmail).collection('lists').doc(listId).update(newData);
+//     return true;
+//   } catch (error) {
+//     console.error('Error updating shopping list:', error);
+//     return false;
+//   }
+// };
+export const addCollaborator = async (listId, email) => {
   try {
-    await firestore.collection('shoppingLists').doc(userEmail).collection('lists').doc(listId).delete();
-    return true;
+    const userSnapshot = await firestore.collection('users').where('email', '==', email).get();
+    if (!userSnapshot.empty) {
+      const userId = userSnapshot.docs[0].id;
+      const listRef = firestore.collection('shoppingLists').doc(listId);
+      await listRef.update({
+        collaborators: firebase.firestore.FieldValue.arrayUnion(userId)
+      });
+    }
   } catch (error) {
-    console.error('Error deleting shopping list:', error);
-    return false;
-  }
-};
-
-export const updateShoppingList = async (userEmail, listId, newData) => {
-  try {
-    await firestore.collection('shoppingLists').doc(userEmail).collection('lists').doc(listId).update(newData);
-    return true;
-  } catch (error) {
-    console.error('Error updating shopping list:', error);
-    return false;
+    console.error('Error adding collaborator', error);
   }
 };
 export default firebase;

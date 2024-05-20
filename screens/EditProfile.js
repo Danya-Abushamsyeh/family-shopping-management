@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import firebase from './../firebase';
-import ImagePicker from 'react-native-image-picker';
+import { Picker } from '@react-native-picker/picker'; // Import Picker from the new package
 
 const EditProfileScreen = ({ navigation }) => {
+  const [selectedOption, setSelectedOption] = useState('displayName');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState(null); // New state for profile photo
 
   const handleChangePassword = async () => {
     try {
       if (newPassword !== confirmNewPassword) {
-        Alert.alert('Password Error', 'New password and confirm password do not match');
+        Alert.alert('שגיאת סיסמה', 'סיסמה חדשה וסיסמת אישור אינן תואמות');
         return;
       }
 
@@ -23,113 +23,105 @@ const EditProfileScreen = ({ navigation }) => {
       await user.reauthenticateWithCredential(credential);
       await user.updatePassword(newPassword);
 
-      Alert.alert('Password Changed', 'Your password has been changed successfully');
+      Alert.alert('הסיסמה שונתה', 'הסיסמה שלך שונתה בהצלחה');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
     } catch (error) {
-      Alert.alert('Password Change Error', error.message);
+      Alert.alert('שגיאת שינוי סיסמה', error.message);
     }
   };
 
   const handleUpdateProfile = async () => {
     try {
       const user = firebase.auth().currentUser;
-      await user.updateProfile({
-        displayName: displayName.trim(),
-        email: email.trim(),
-      });
-    //   if (profilePhoto) {
-    //     try {
-    //       const user = firebase.auth().currentUser;
-    //       const storageRef = firebase.storage().ref().child(`profile_photos/${user.uid}`);
-    //       await storageRef.put(profilePhoto);
-    //       const photoURL = await storageRef.getDownloadURL();
-    //       await user.updateProfile({
-    //         photoURL: photoURL,
-    //       });
-    //       // Reset profile photo state
-    //       setProfilePhoto(null);
-    //     } catch (error) {
-    //       Alert.alert('Profile Photo Update Error', error.message);
-    //     }
-    //   }
-      Alert.alert('Profile Updated', 'Your profile has been updated successfully');
+      const updates = {};
+      
+      if (selectedOption === 'displayName') {
+        updates.displayName = displayName.trim();
+      } else if (selectedOption === 'email') {
+        updates.email = email.trim();
+      }
+      console.log('Updates:', updates); // Log the updates being made
+
+      await user.updateProfile(updates);
+
+      Alert.alert('הפרופיל עודכן', 'הפרופיל שלך עודכן בהצלחה');
       setDisplayName('');
       setEmail('');
-      navigation.navigate('Profile');
+      navigation.navigate('פרופיל');
     } catch (error) {
-      Alert.alert('Profile Update Error', error.message);
+      Alert.alert('שגיאת עדכון פרופיל', error.message);
     }
-    
   };
 
-  const handleChoosePhoto = async () => {
-    // Options for image picker
-    const options = {
-      title: 'Select Profile Photo',
-      storageOptions: {
-        skipBackup: true,
-        path: 'images',
-      },
-    };
-  
-    // Show image picker
-    ImagePicker.showImagePicker(options, (response) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.error) {
-        console.log('ImagePicker Error: ', response.error);
-      } else {
-        // Set selected photo to profile photo state
-        setProfilePhoto(response.uri);
-      }
-    });
+  const renderFieldsBasedOnOption = () => {
+    if (selectedOption === 'displayName') {
+      return (
+        <TextInput
+          style={styles.input}
+          placeholder="שם משתמש"
+          value={displayName}
+          onChangeText={setDisplayName}
+        />
+      );
+    } else if (selectedOption === 'email') {
+      return (
+        <TextInput
+          style={styles.input}
+          placeholder="מייל"
+          value={email}
+          onChangeText={setEmail}
+        />
+      );
+    } else {
+      return (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="סיסמה נוכחית"
+            secureTextEntry
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="סיסמה חדשה"
+            secureTextEntry
+            value={newPassword}
+            onChangeText={setNewPassword}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="תאשר סיסמא חדשה"
+            secureTextEntry
+            value={confirmNewPassword}
+            onChangeText={setConfirmNewPassword}
+          />
+        </>
+      );
+    }
   };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Edit Profile</Text>
+      
+      <Text style={styles.title}>ערוך פרופיל</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Display Name"
-        value={displayName}
-        onChangeText={setDisplayName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Current Password"
-        secureTextEntry
-        value={currentPassword}
-        onChangeText={setCurrentPassword}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="New Password"
-        secureTextEntry
-        value={newPassword}
-        onChangeText={setNewPassword}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm New Password"
-        secureTextEntry
-        value={confirmNewPassword}
-        onChangeText={setConfirmNewPassword}
-      />
+      <Picker
+        selectedValue={selectedOption}
+        style={{ height: 50, width: '100%' }}
+        onValueChange={(itemValue, itemIndex) => setSelectedOption(itemValue)}
+      >
+        <Picker.Item label="שנה את שם התצוגה" value="displayName" />
+        {/* <Picker.Item label="Change Email" value="email" /> */}
+        <Picker.Item label="שנה סיסמא" value="password" />
+      </Picker>
 
-      <TouchableOpacity style={styles.button} onPress={handleChangePassword}>
-        <Text style={styles.buttonText}>Change Password</Text>
-      </TouchableOpacity>
+      {renderFieldsBasedOnOption()}
 
-      <TouchableOpacity style={styles.button} onPress={handleUpdateProfile}>
-        <Text style={styles.buttonText}>Update Profile</Text>
+      <TouchableOpacity style={styles.button} onPress={selectedOption === 'password' ? handleChangePassword : handleUpdateProfile}>
+        <Text style={styles.buttonText}>{selectedOption === 'password' ? 'שנה סיסמא' : 'עדכן פרופיל'}</Text>
       </TouchableOpacity>
     </View>
   );

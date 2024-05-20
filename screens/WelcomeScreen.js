@@ -5,8 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 const WelcomeScreen = () => {
     const navigation = useNavigation();
     const handleLetsGetStartedPress = () => {
-        // navigation.navigate('Login');
-        navigation.navigate('TabNavigation');
+        navigation.navigate('Login');
+        // navigation.navigate('התחברות');
 
       };
       const handleLsignup = () => {
