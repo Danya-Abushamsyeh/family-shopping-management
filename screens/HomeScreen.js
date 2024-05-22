@@ -1,7 +1,7 @@
-import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react-native';
+// HomeScreen.js
+import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { getItemsBySupermarket, saveShoppingList } from './../firebase'; // Assuming you have a function to save data to Firestore
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { FontAwesome } from '@expo/vector-icons';
 
 const supermarkets = [
@@ -17,30 +17,19 @@ const supermarkets = [
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const [items, setItems] = useState([]);
-  const [selectedSupermarket, setSelectedSupermarket] = useState('');
 
-  useEffect(() => {
-    if (selectedSupermarket) {
-      const fetchItems = async () => {
-        const itemsData = await getItemsBySupermarket(selectedSupermarket);
-        setItems(itemsData);
-      };
-      fetchItems();
-    }
-  }, [selectedSupermarket]);
+  const handleChoose = (supermarketName) => {
+    navigation.navigate('ListItems', { supermarketName});
+
+    // navigation.navigate('SupermarketLists', { supermarketName });
+  };
 
   const renderSupermarketItem = ({ item }) => (
-   <TouchableOpacity style={styles.itemContainer} onPress={() => handleChoose(item.name)}>
+    <TouchableOpacity style={styles.itemContainer} onPress={() => handleChoose(item.name)}>
       <Image source={item.imageUrl} style={styles.supermarketImage} />
-      <Text style={styles.itemName}>{item.ItemName}</Text>
+      <Text style={styles.supermarketName}></Text>
     </TouchableOpacity>
   );
-  
-  const handleChoose = (supermarketName) => {
-    navigation.navigate('Items', { supermarketName});
-  };
-  
 
   return (
     <View>
@@ -50,16 +39,15 @@ const HomeScreen = () => {
             <Text>עזרה</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.searchContainer}>
+        {/* <View style={styles.searchContainer}>
           <TouchableOpacity style={styles.searchButton} onPress={() => alert('Searching...')}>
-            <FontAwesome name='search' /> 
+            <FontAwesome name='search' />
           </TouchableOpacity>
           <TextInput style={styles.searchInput} placeholder="חפש..." />
-        </View>
+        </View> */}
         <Image source={require('./../assets/images/Image.jpg')} style={styles.logo} />
       </View>
-      
-      <Text style={styles.supermarketName}>בואו להכין את רשימת הקניות שלנו. בחר את הסופרמרקט אליו תלך</Text>
+      <Text style={styles.title}>בואו להכין את רשימת הקניות שלנו. בחר את הסופרמרקט אליו תלך</Text>
       <FlatList
         data={supermarkets}
         renderItem={renderSupermarketItem}
@@ -67,19 +55,16 @@ const HomeScreen = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.supermarketsContainer}
       />
-   
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-
   logo: {
     width: 50,
     height: 50,
     marginRight: 20,
-    marginTop:39
-
+    marginTop: 39,
   },
   logoContainer: {
     height: 90,
@@ -88,14 +73,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    // marginTop:30
   },
   navigation: {
     flexDirection: 'row',
   },
   navItem: {
     marginLeft: 20,
-    marginTop:39
+    marginTop: 39,
   },
   searchContainer: {
     width: 230,
@@ -105,17 +89,16 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 8,
     alignItems: 'center',
-    marginTop:39
+    marginTop: 39,
   },
   searchInput: {
     flex: 1,
     paddingVertical: 8,
     marginLeft: 140,
-
   },
   supermarketsContainer: {
     marginTop: 20,
-    marginBottom:50
+    marginBottom: 50,
   },
   supermarketItem: {
     marginRight: 10,
@@ -126,13 +109,13 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 10,
     alignItems: 'center',
-    marginLeft:50
+    marginLeft: 50,
   },
   supermarketName: {
     marginTop: 5,
     textAlign: 'center',
     fontWeight: 'bold',
-    color:'#464444'
+    color: '#464444',
   },
   itemContainer: {
     backgroundColor: '#fff',
@@ -140,18 +123,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 5,
     elevation: 2,
-    marginRight:30,
-    marginLeft:30
+    marginRight: 30,
+    marginLeft: 30,
   },
-  itemName: {
+  title: {
+    textAlign: 'center',
     fontWeight: 'bold',
     fontSize: 16,
+    margin: 10,
   },
-  itemPrice: {
-    color: '#888',
-    fontSize: 14,
-  },
-
 });
 
 export default HomeScreen;

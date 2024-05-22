@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import firebase from './../firebase';
-import { Picker } from '@react-native-picker/picker'; // Import Picker from the new package
+import { Picker } from '@react-native-picker/picker';
 
 const EditProfileScreen = ({ navigation }) => {
-  const [selectedOption, setSelectedOption] = useState('displayName');
+  const [selectedOption, setSelectedOption] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -36,20 +36,21 @@ const EditProfileScreen = ({ navigation }) => {
     try {
       const user = firebase.auth().currentUser;
       const updates = {};
-      
+
       if (selectedOption === 'displayName') {
         updates.displayName = displayName.trim();
+        await user.updateProfile(updates);
+        await firebase.firestore().collection('users').doc(user.uid).update({ displayName: updates.displayName });
+        setDisplayName(updates.displayName);
       } else if (selectedOption === 'email') {
         updates.email = email.trim();
+        await user.updateEmail(updates.email);
+        await firebase.firestore().collection('users').doc(user.uid).update({ email: updates.email });
+        setEmail(updates.email);
       }
-      console.log('Updates:', updates); // Log the updates being made
-
-      await user.updateProfile(updates);
 
       Alert.alert('הפרופיל עודכן', 'הפרופיל שלך עודכן בהצלחה');
-      setDisplayName('');
-      setEmail('');
-      navigation.navigate('פרופיל');
+      navigation.navigate('פרופיל'); 
     } catch (error) {
       Alert.alert('שגיאת עדכון פרופיל', error.message);
     }
@@ -60,7 +61,7 @@ const EditProfileScreen = ({ navigation }) => {
       return (
         <TextInput
           style={styles.input}
-          placeholder="שם משתמש"
+          placeholder="שם משתמש חדש"
           value={displayName}
           onChangeText={setDisplayName}
         />
@@ -69,12 +70,12 @@ const EditProfileScreen = ({ navigation }) => {
       return (
         <TextInput
           style={styles.input}
-          placeholder="מייל"
+          placeholder="מייל חדש"
           value={email}
           onChangeText={setEmail}
         />
       );
-    } else {
+    } else if (selectedOption === 'password') {
       return (
         <>
           <TextInput
@@ -105,28 +106,34 @@ const EditProfileScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      
       <Text style={styles.title}>ערוך פרופיל</Text>
 
       <Picker
         selectedValue={selectedOption}
-        style={{ height: 50, width: '100%' }}
-        onValueChange={(itemValue, itemIndex) => setSelectedOption(itemValue)}
+        style={styles.picker}
+        onValueChange={(itemValue) => setSelectedOption(itemValue)}
       >
+        <Picker.Item label="בחר אפשרות" value="" />
         <Picker.Item label="שנה את שם התצוגה" value="displayName" />
         {/* <Picker.Item label="Change Email" value="email" /> */}
         <Picker.Item label="שנה סיסמא" value="password" />
       </Picker>
 
-      {renderFieldsBasedOnOption()}
+      {selectedOption && (
+        <View style={styles.inputContainer}>
+          {renderFieldsBasedOnOption()}
 
-      <TouchableOpacity style={styles.button} onPress={selectedOption === 'password' ? handleChangePassword : handleUpdateProfile}>
-        <Text style={styles.buttonText}>{selectedOption === 'password' ? 'שנה סיסמא' : 'עדכן פרופיל'}</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={selectedOption === 'password' ? handleChangePassword : handleUpdateProfile}
+          >
+            <Text style={styles.buttonText}>{selectedOption === 'password' ? 'שנה סיסמא' : 'עדכן פרופיל'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -139,6 +146,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
+  picker: {
+    height: 50,
+    width: '100%',
+    marginBottom: 20, 
+  },
+  inputContainer: {
+    marginTop: 110, 
+    width: '100%',
+    alignItems: 'center',
+  },
   input: {
     height: 40,
     width: '100%',
@@ -147,6 +164,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 20,
     paddingLeft: 10,
+    textAlign:'right'
   },
   button: {
     backgroundColor: '#635A5A',

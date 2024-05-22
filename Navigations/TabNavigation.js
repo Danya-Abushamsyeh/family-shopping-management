@@ -9,7 +9,8 @@ import EditProfileScreen from '../screens/EditProfile';
 import ShoppingList from '../screens/ShoppingList';
 import signup from '../screens/Signup';
 import React, { useState } from 'react';
-import ListsScreen from '../screens/ListsScreen';
+import SupermarketListsScreen  from '../screens/SupermarketListsScreen';
+import ListItemsScreen   from '../screens/ListItemsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -38,14 +39,16 @@ const TabNavigation = () => {
     >
       
       {/* <Tab.Screen name='התחברות' component={LoginScreen} options={{ headerShown: false,tabBarItemStyle:{paddingHorizontal:70, paddingStart:63} }}/> */}
-      <Tab.Screen name='בית' component={HomeScreen} options={{ headerShown: false,tabBarItemStyle:{paddingHorizontal:100}}} />
-      <Tab.Screen name='פרופיל' component={ProfileScreen} options={{ headerShown: false,tabBarIconStyle:{left:40},tabBarLabelStyle:{left:40}}}/>
+      <Tab.Screen name='בית' component={HomeScreen} options={{ headerShown: false,tabBarItemStyle:{paddingHorizontal:80}}} />
+      <Tab.Screen name='פרופיל' component={ProfileScreen} options={{ headerShown: false,tabBarIconStyle:{left:100},tabBarLabelStyle:{left:100}}}/>
       
-      <Tab.Screen name='EditProfile' component={EditProfileScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300} }}/>
+      <Tab.Screen name='EditProfile' component={EditProfileScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300} }}/>
       <Tab.Screen name='signup' component={signup} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
       <Tab.Screen name='Items' component={ItemsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
-      <Tab.Screen name='Lists' component={ListsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
+      {/* <Tab.Screen name='Lists' component={ListsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/> */}
       <Tab.Screen name='ShoppingList' component={ShoppingList} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
+      <Tab.Screen name='SupermarketLists' component={SupermarketListsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>
+      <Tab.Screen name='ListItems' component={ListItemsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>
 
     </Tab.Navigator>
   );

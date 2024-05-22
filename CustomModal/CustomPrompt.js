@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 
-const CustomPrompt = ({ visible, onClose, onSubmit }) => {
+const CustomPrompt = ({ visible, onCancel, onSubmit }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleCancel = () => {
     setInputValue('');
-    onClose();
+    onCancel();
   };
 
   const handleSubmit = () => {
@@ -23,19 +23,19 @@ const CustomPrompt = ({ visible, onClose, onSubmit }) => {
     >
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
-          <Text style={styles.modalText}>Enter Shopping List Name</Text>
+          <Text style={styles.modalText}>הזן את שם רשימת הקניות</Text>
           <TextInput
             style={styles.input}
-            placeholder="Shopping List Name"
+            placeholder="שם רשימת קניות"
             value={inputValue}
             onChangeText={setInputValue}
           />
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.button} onPress={handleCancel}>
-              <Text style={styles.buttonText}>Cancel</Text>
+              <Text style={styles.buttonText}>לבטל</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-              <Text style={styles.buttonText}>OK</Text>
+              <Text style={styles.buttonText}>אשור</Text>
             </TouchableOpacity>
           </View>
         </View>

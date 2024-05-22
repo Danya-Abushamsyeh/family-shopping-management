@@ -1,48 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { FontAwesome } from '@expo/vector-icons';
 import firebase, { firestore, auth } from './../firebase';
 import { Share } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons'; 
 
-const ShoppingList = ({ route }) => {
-    
+const ShoppingList = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const { supermarketName, listName } = route.params || {};
   const [shoppingList, setShoppingList] = useState([]);
-  const isFocused = useIsFocused();
+  const [listNameState, setListNameState] = useState('');
 
   useEffect(() => {
-    const fetchShoppingList = async () => {
-      // Fetch the updated shopping list from Firestore
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userRef = firestore.doc(`users/${currentUser.uid}`);
-        const userSnapshot = await userRef.get();
-        const userData = userSnapshot.data();
-        const updatedShoppingList = userData.shoppingList || [];
-        setShoppingList(updatedShoppingList);
+    const fetchItems = async () => {
+      try {
+        const userId = auth.currentUser.uid;
+
+        const listDoc = await firestore
+          .collection('users')
+          .doc(userId)
+          .collection('shoppingLists')
+          .doc(supermarketName)
+          .collection('lists')
+          .doc(listName)
+          .get();
+
+        if (listDoc.exists) {
+          const { items, listName: fetchedListName } = listDoc.data();
+          // console.log('lists:', listDoc.data());
+          setShoppingList(items || []);
+          setListNameState(fetchedListName || '');
+        } else {
+          console.log('Document does not exist!');
+        }
+      } catch (error) {
+        console.error('Error fetching items:', error);
       }
     };
 
-    // Fetch the shopping list whenever the screen is focused
-    if (isFocused) {
-      fetchShoppingList();
-    }
-  }, [isFocused]);
-  
+    fetchItems();
+  }, [route.params]);
+
   const totalPrice = shoppingList.reduce((acc, item) => acc + (parseFloat(item.ItemPrice) * (item.quantity || 1)), 0);
 
   const renderItem = ({ item, index }) => (
-    
     <View style={styles.item}>
-      
       <Text style={styles.itemName}>{item.ItemName}</Text>
       <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
       <Text style={styles.itemPrice}>מחיר: {item.ItemPrice} ₪</Text>
       <View style={styles.quantityContainer}>
-        {/* <Text style={styles.quantityText}>כמות:</Text> */}
         <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) + 1)}>
-        <FontAwesome name='plus' style={styles.quantityIcon} />
+          <FontAwesome name='plus' style={styles.quantityIcon} />
         </TouchableOpacity>
         <TextInput
           style={styles.quantityInput}
@@ -51,26 +60,23 @@ const ShoppingList = ({ route }) => {
           value={item.quantity ? item.quantity.toString() : ''}
         />
         <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) - 1)}>
-          <FontAwesome name='minus'  style={styles.quantityIcon} />
+          <FontAwesome name='minus' style={styles.quantityIcon} />
         </TouchableOpacity>
       </View>
       <TouchableOpacity onPress={() => deleteItem(item)} style={styles.deleteButton}>
-        <FontAwesome name='trash'style={styles.deleteIcon} />
+        <FontAwesome name='trash' style={styles.deleteIcon} />
       </TouchableOpacity>
     </View>
   );
-  
+
   const deleteItem = async (itemToDelete) => {
     try {
-      // Remove item from local state
       const updatedList = shoppingList.filter(item => item !== itemToDelete);
       setShoppingList(updatedList);
-  
-      // Delete item from Firestore
       const currentUser = auth.currentUser;
       if (currentUser) {
         const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.update({ shoppingList: updatedList });
+        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName).update({ items: updatedList });
         Alert.alert('Success', 'Item deleted successfully.');
       }
     } catch (error) {
@@ -99,14 +105,11 @@ const ShoppingList = ({ route }) => {
 
   const handleClearAllItems = async () => {
     try {
-      // Clear all items from local state
       setShoppingList([]);
-  
-      // Clear all items from Firestore
       const currentUser = auth.currentUser;
       if (currentUser) {
         const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.update({ shoppingList: [] });
+        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName).update({ items: [] });
         Alert.alert('Success', 'All items cleared successfully.');
       }
     } catch (error) {
@@ -114,12 +117,13 @@ const ShoppingList = ({ route }) => {
       Alert.alert('Error', 'Failed to clear items. Please try again later.');
     }
   };
+
   const saveShoppingList = async () => {
     try {
       const currentUser = auth.currentUser;
       if (currentUser) {
         const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.update({ shoppingList: shoppingList });
+        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName).update({ items: shoppingList });
         Alert.alert('Success', 'Shopping list updated successfully.');
       }
     } catch (error) {
@@ -127,6 +131,7 @@ const ShoppingList = ({ route }) => {
       Alert.alert('Error', 'Failed to update shopping list. Please try again later.');
     }
   };
+
   const handleShare = async () => {
     try {
       const itemsText = shoppingList.map(item => `${item.ItemName}: ${item.quantity}`).join('\n');
@@ -137,43 +142,16 @@ const ShoppingList = ({ route }) => {
       console.error('Error sharing shopping list:', error.message);
     }
   };
-  const handleChoose = (supermarketName) => {
-    navigation.navigate('Items', { supermarketName, key: Date.now().toString() });
-  };
 
   return (
     <View style={styles.container}>
-
-      <Text style={styles.title}>רשימת הקניות שלי</Text>
-{/*       
-      <TextInput
-        style={styles.listNameInput}
-        placeholder="Enter list name"
-        onChangeText={setListName}
-        value={listName}
-      /> */}
+      <Text style={styles.title}>{listNameState}</Text>
       <FlatList
         data={shoppingList}
         renderItem={renderItem}
-        keyExtractor={(item, index) => `${item.id}-${index}`} // Ensure unique keys
-        />
-
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity onPress={clearAllItems} style={styles.button}>
-          <FontAwesome name="trash" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>מחק את הרשימה</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
-          <FontAwesome name="save" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>שמור את הרשימה</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleShare} style={styles.button}>
-          <FontAwesome name="share" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>שתף את הרשימה</Text>
-        </TouchableOpacity>
-      </View>
-
-     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        keyExtractor={(item, index) => `${item.id}-${index}`}
+      />
+       <TouchableOpacity onPress={() => navigation.navigate('ListItems', { supermarketName, listName })} style={styles.backButton}>
         <FontAwesome name="arrow-left" style={styles.backIcon} />
         <Text style={styles.backText}>חזור לרשימת המוצרים</Text>
       </TouchableOpacity>
@@ -181,107 +159,138 @@ const ShoppingList = ({ route }) => {
       <View style={styles.totalContainer}>
         <Text style={styles.totalText}>סה"כ: {totalPrice.toFixed(2)} ₪</Text>
       </View>
+      <View style={styles.buttonsContainer}>
+        <TouchableOpacity onPress={clearAllItems} style={styles.button}>
+          <FontAwesome name="trash" style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>מחק את הרשימה</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
+          <FontAwesome name="save" style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>שמור שינויים</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleShare} style={styles.button}>
+          <FontAwesome name="share" style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>שתף את הרשימה</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    marginTop:50
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
     textAlign: 'center',
+    marginBottom: 20,
+    marginTop:50,
   },
   item: {
-    backgroundColor: '#f9c2ff',
-    padding: 20,
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  totalContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#ccc',
-    paddingTop: 10,
-    alignItems: 'center',
-  },
-  totalText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  itemName: {
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  ItemCode: {
-    color: '#888',
-    fontSize: 12,
-    marginLeft:50
-  },
-  itemPrice: {
-    color: '#888',
-    fontSize: 14,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: 15,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 5,
     marginBottom: 10,
   },
-  backIcon: {
-    marginRight: 5,
-  },
-  backText: {
+  itemName: {
     fontSize: 16,
-    textDecorationLine: 'underline',
+    fontWeight: 'bold',
+    textAlign:'right'
   },
-  deleteButton: {
-    alignSelf: 'right',
+  ItemCode: {
+    fontSize: 14,
+    color: '#555',
+    textAlign:'right'
   },
-  deleteIcon: {
-    color: 'red',
+  itemPrice: {
+    fontSize: 14,
+    color: '#555',
+    textAlign:'right'
+
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft:240
+    marginTop: 10,
   },
-  quantityText: {
-    fontSize: 10,
-    textAlign:'center'
+  quantityIcon: {
+    fontSize: 20,
+    color: '#e9a1a1',
+    marginHorizontal: 10,
   },
   quantityInput: {
+    width: 40,
+    height: 30,
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 5,
-    // padding: 5,
-    width: 20,
-    marginLeft:5,
-    marginTop:5,
-    height:20
+    textAlign: 'center',
+    marginHorizontal: 10,
   },
-  quantityIcon:{
-    marginLeft:7,
-    marginTop:5,
-
+  deleteButton: {
+    position: 'absolute',
+    left: 10,
+    top:20
+  },
+  deleteIcon: {
+    fontSize: 20,
+    color: '#e9a1a1',
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    // marginVertical: 20,
+    // right:12,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    padding: 3,
+    backgroundColor: '#e9a1a1',
+    borderRadius: 5,
   },
   buttonIcon: {
-    marginLeft: 223,
-    marginHorizontal: 7
+    fontSize: 16,
+    color: '#fff',
+    marginRight: 10,
+    fontWeight:'bold'
   },
   buttonText: {
-    fontSize: 16,
-    textDecorationLine: 'underline',
+    fontSize: 13,
+    color: '#fff',
+    fontWeight:'500'
   },
-
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    marginTop: 10,
+  },
+  backIcon: {
+    fontSize: 20,
+    color: '#e9a1a1',
+    marginRight: 10,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#e9a1a1',
+  },
+  totalContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+    backgroundColor:'white',
+    width:'100%',
+    height:40
+  },
+  totalText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    alignItems:'center',
+    marginTop:4
+  },
 });
 
 export default ShoppingList;
