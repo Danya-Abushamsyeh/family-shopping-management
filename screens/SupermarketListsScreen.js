@@ -1,5 +1,5 @@
 // SupermarketListsScreen.js
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { auth, firestore } from './../firebase';
 import React, { useEffect, useState } from 'react';
@@ -9,17 +9,26 @@ const SupermarketListsScreen = () => {
   const route = useRoute();
   const { supermarketName } = route.params;
   const [lists, setLists] = useState([]);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   useEffect(() => {
-    const fetchLists = async () => {
+    const fetchLists = () => {
       const currentUser = auth.currentUser;
 
       if (currentUser) {
         const userRef = firestore.collection('users').doc(currentUser.uid);
-        const listsSnapshot = await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').get();
-        const listsData = listsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const unsubscribe = userRef
+          .collection('shoppingLists')
+          .doc(supermarketName)
+          .collection('lists')
+          .onSnapshot((snapshot) => {
+            const listsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setLists(listsData);
+            setLoading(false); // Set loading to false once data is fetched
+          });
 
-        setLists(listsData);
+        return () => unsubscribe();
       }
     };
     fetchLists();
@@ -38,11 +47,15 @@ const SupermarketListsScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{supermarketName} Lists</Text>
-      <FlatList
-        data={lists}
-        renderItem={renderListItem}
-        keyExtractor={(item) => item.id}
-      />
+      {loading ? ( 
+        <ActivityIndicator size="large" color="#e9a1a1" />
+      ) : (
+        <FlatList
+          data={lists}
+          renderItem={renderListItem}
+          keyExtractor={(item) => item.id}
+        />
+      )}
     </View>
   );
 };
@@ -53,7 +66,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    marginTop:51,
+    marginTop: 51,
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,

@@ -11,6 +11,8 @@ import signup from '../screens/Signup';
 import React, { useState } from 'react';
 import SupermarketListsScreen  from '../screens/SupermarketListsScreen';
 import ListItemsScreen   from '../screens/ListItemsScreen';
+import ShareListScreen from '../screens/ShareListScreen';
+import AddFamilyMember from '../screens/AddFamilyMember';
 
 const Tab = createBottomTabNavigator();
 
@@ -49,6 +51,8 @@ const TabNavigation = () => {
       <Tab.Screen name='ShoppingList' component={ShoppingList} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
       <Tab.Screen name='SupermarketLists' component={SupermarketListsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>
       <Tab.Screen name='ListItems' component={ListItemsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>
+      <Tab.Screen name='ShareList' component={ShareListScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>
+      <Tab.Screen name='AddFamilyMember' component={AddFamilyMember} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>
 
     </Tab.Navigator>
   );

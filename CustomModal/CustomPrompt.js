@@ -32,7 +32,7 @@ const CustomPrompt = ({ visible, onCancel, onSubmit }) => {
           />
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.button} onPress={handleCancel}>
-              <Text style={styles.buttonText}>לבטל</Text>
+              <Text style={styles.buttonText}>בטל</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={handleSubmit}>
               <Text style={styles.buttonText}>אשור</Text>

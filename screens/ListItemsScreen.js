@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react-native';
+import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert, ActivityIndicator  } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import { auth, firestore } from './../firebase';
@@ -13,19 +13,18 @@ const ListItemsScreen = ({ route }) => {
   const [items, setItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [shoppingList, setShoppingList] = useState([]);
-  const [listName, setListName] = useState('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [listName, setListName] = useState(selectedListName || '');
+  const [isModalVisible, setIsModalVisible] = useState(!selectedListName);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   useEffect(() => {
     const fetchItems = async () => {
       const itemsData = await getItemsBySupermarket(supermarketName);
       setItems(itemsData);
+      setLoading(false);
     };
-    fetchItems();
 
-    if (!listName) {
-      setIsModalVisible(true);
-    }
+    fetchItems();
   }, [supermarketName, isFocused]);
 
   const handlePromptSubmit = (name) => {
@@ -37,6 +36,7 @@ const ListItemsScreen = ({ route }) => {
       // navigation.goBack();
     }
   };
+
   const filteredItems = items.filter(item =>
     item.ItemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.ItemCode.toLowerCase().includes(searchQuery.toLowerCase())
@@ -122,11 +122,15 @@ const ListItemsScreen = ({ route }) => {
 
       <Text style={styles.supermarketName}>רשימת המוצרים</Text>
 
-      <FlatList
-        data={filteredItems}
-        renderItem={renderSupermarketItem}
-        keyExtractor={item => item.id.toString()}
-      />
+      {loading ? ( 
+        <ActivityIndicator size="large" color="#e9a1a1" />
+      ) : (
+        <FlatList
+          data={filteredItems}
+          renderItem={renderSupermarketItem}
+          keyExtractor={item => item.id.toString()}
+        />
+      )}
 
       <TouchableOpacity style={styles.listButton} onPress={() => navigation.navigate('SupermarketLists', { supermarketName })}>
         <FontAwesome name="list" size={24} color="white" style={styles.listIcon} />

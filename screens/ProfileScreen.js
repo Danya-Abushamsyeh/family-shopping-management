@@ -154,9 +154,9 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.optionItem} onPress={() => navigation.navigate('MyLists')}>
+            <TouchableOpacity style={styles.optionItem} onPress={() => navigation.navigate('ShareList')}>
               <View style={styles.buttonContainer}>
-                <Text style={styles.optionText}>הרשימות שלי</Text>
+                <Text style={styles.optionText}>רשימות משותפות </Text>
                 <FontAwesome name="list" size={20} style={styles.buttonIcon} />
               </View>
             </TouchableOpacity>

@@ -1,322 +1,195 @@
-// import React, { useState, useEffect } from 'react';
-// import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react-native';
-// import { FontAwesome } from '@expo/vector-icons';
-// import { auth, firestore } from './../firebase';
-// import { useNavigation, useIsFocused } from '@react-navigation/native';
-// import { getItemsBySupermarket } from './../firebase';
-// import CustomPrompt from './../CustomModal/CustomPrompt';
-
-// const ItemsScreen = ({ route }) => {
-//   const navigation = useNavigation();
-//   const isFocused = useIsFocused();
-//   const { supermarketName, listName } = route.params;
-//   const [items, setItems] = useState([]);
-//   const [searchQuery, setSearchQuery] = useState('');
-//   const [shoppingList, setShoppingList] = useState([]);
-//   const [isModalVisible, setIsModalVisible] = useState(false);
-
-//   useEffect(() => {
-//     const fetchItems = async () => {
-//       const itemsData = await getItemsBySupermarket(supermarketName);
-//       setItems(itemsData);
-//     };
-//     fetchItems();
-//   }, [supermarketName, isFocused]);
-
-//   const handleAddItemToShoppingList = (item) => {
-//     setShoppingList(prevList => [...prevList, item]);
-//     Alert.alert('הפריט נוסף בהצלחה לרשימה שלך');
-//   };
-
-//   const handleSaveShoppingList = async () => {
-//     const currentUser = auth.currentUser;
-//     if (currentUser) {
-//       try {
-//         const userRef = firestore.collection('users').doc(currentUser.uid);
-//         const shoppingListRef = userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName);
-//         await shoppingListRef.set({ items: shoppingList });
-//         Alert.alert('רשימת הקניות נשמרה בהצלחה');
-//         setShoppingList([]);
-//       } catch (error) {
-//         console.error('Error saving shopping list:', error);
-//         Alert.alert('שגיאה בשמירת רשימת הקניות');
-//       }
-//     }
-//   };
-
-//   const filteredItems = items.filter(item =>
-//     item.ItemName.toLowerCase().includes(searchQuery.toLowerCase())
-//   );
-
-//   const renderItem = ({ item }) => (
-//     <TouchableOpacity style={styles.itemContainer} onPress={() => handleAddItemToShoppingList(item)}>
-//       <Text style={styles.itemName}>{item.ItemName}</Text>
-//       <Text style={styles.itemDetails}>מחיר: {item.ItemPrice}</Text>
-//       <Text style={styles.itemDetails}>קוד: {item.ItemCode}</Text>
-//       <Text style={styles.itemDetails}>כמות: {item.quantity}</Text>
-//     </TouchableOpacity>
-//   );
-
-//   return (
-//     <View style={styles.container}>
-//       <View style={styles.searchContainer}>
-//         <TextInput
-//           style={styles.searchInput}
-//           placeholder="חפש מוצר..."
-//           value={searchQuery}
-//           onChangeText={setSearchQuery}
-//         />
-//         <TouchableOpacity style={styles.searchButton} onPress={() => setSearchQuery('')}>
-//           <FontAwesome name='search' />
-//         </TouchableOpacity>
-//       </View>
-//       <FlatList
-//         data={filteredItems}
-//         renderItem={renderItem}
-//         keyExtractor={(item, index) => index.toString()}
-//         contentContainerStyle={styles.itemsContainer}
-//       />
-//       {shoppingList.length > 0 && (
-//         <TouchableOpacity style={styles.saveButton} onPress={handleSaveShoppingList}>
-//           <Text style={styles.saveButtonText}>שמור רשימה</Text>
-//         </TouchableOpacity>
-//       )}
-//       <CustomPrompt
-//         isVisible={isModalVisible}
-//         title="הוסף מוצר חדש"
-//         onCancel={() => setIsModalVisible(false)}
-//         onSubmit={(item) => {
-//           handleAddItemToShoppingList(item);
-//           setIsModalVisible(false);
-//         }}
-//       />
-//       <TouchableOpacity style={styles.listButton} onPress={() => navigation.navigate('ShoppingList')}>
-//         <FontAwesome name="list" size={24} color="black" />
-//         <Text style={styles.listButtonText}>רשימה</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     padding: 20,
-//   },
-//   searchContainer: {
-//     flexDirection: 'row',
-//     marginBottom: 20,
-//   },
-//   searchInput: {
-//     flex: 1,
-//     borderBottomWidth: 1,
-//     marginRight: 10,
-//     padding: 10,
-//   },
-//   searchButton: {
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: 10,
-//     backgroundColor: '#e9a1a1',
-//     borderRadius: 5,
-//   },
-//   itemsContainer: {
-//     paddingBottom: 20,
-//   },
-//   itemContainer: {
-//     backgroundColor: '#f9f9f9',
-//     padding: 15,
-//     borderRadius: 5,
-//     marginBottom: 10,
-//     elevation: 1,
-//   },
-//   itemName: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-//   itemDetails: {
-//     fontSize: 14,
-//     color: '#555',
-//   },
-//   saveButton: {
-//     padding: 15,
-//     backgroundColor: '#e9a1a1',
-//     borderRadius: 5,
-//     alignItems: 'center',
-//     marginTop: 20,
-//   },
-//   saveButtonText: {
-//     fontSize: 16,
-//     color: '#fff',
-//     fontWeight: 'bold',
-//   },
-//   listButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     padding: 15,
-//     backgroundColor: '#e9a1a1',
-//     borderRadius: 5,
-//     alignItems: 'center',
-//     marginTop: 20,
-//   },
-//   listButtonText: {
-//     fontSize: 16,
-//     color: '#fff',
-//     fontWeight: 'bold',
-//     marginLeft: 10,
-//   },
-// });
-
-// export default ItemsScreen;
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import firebase, { firestore, auth } from './../firebase';
-import { Share } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons'; 
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import { useNavigation } from '@react-navigation/native';
+import { FontAwesome } from '@expo/vector-icons';
+import { auth, firestore } from './../firebase';
+import { getItemsBySupermarket } from './../firebase';
+import CustomPrompt from './../CustomModal/CustomPrompt';
 
-const ItemsScreen = ({ route }) => {
+const CombinedScreen = () => {
   const navigation = useNavigation();
-  const { supermarketName, list } = route.params;
-  const [shoppingList, setShoppingList] = useState(list.items || []);
+  const [supermarkets, setSupermarkets] = useState([]);
+  const [selectedSupermarket, setSelectedSupermarket] = useState('');
+  const [lists, setLists] = useState([]);
+  const [selectedList, setSelectedList] = useState('');
+  const [items, setItems] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [shoppingList, setShoppingList] = useState([]);
+  const [listName, setListName] = useState('');
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
-    // Set the shopping list from the passed list data
-    if (list) {
-      setShoppingList(list.items);
+    const fetchSupermarkets = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userRef = firestore.collection('users').doc(currentUser.uid);
+        const snapshot = await userRef.collection('shoppingLists').get();
+        const supermarketsData = snapshot.docs.map(doc => doc.id);
+        setSupermarkets(supermarketsData);
+      }
+    };
+    fetchSupermarkets();
+  }, []);
+
+  useEffect(() => {
+    const fetchLists = async () => {
+      if (selectedSupermarket) {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const userRef = firestore.collection('users').doc(currentUser.uid);
+          const listsSnapshot = await userRef.collection('shoppingLists').doc(selectedSupermarket).collection('lists').get();
+          const listsData = listsSnapshot.docs.map(doc => doc.id);
+          setLists(listsData);
+        }
+      }
+    };
+    fetchLists();
+  }, [selectedSupermarket]);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      if (selectedList) {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const listDoc = await firestore
+            .collection('users')
+            .doc(currentUser.uid)
+            .collection('shoppingLists')
+            .doc(selectedSupermarket)
+            .collection('lists')
+            .doc(selectedList)
+            .get();
+
+          if (listDoc.exists) {
+            const { items } = listDoc.data();
+            setShoppingList(items || []);
+            setItems(items || []);
+          } else {
+            console.log('Document does not exist!');
+          }
+        }
+      }
+    };
+    fetchItems();
+  }, [selectedList]);
+
+  const handlePromptSubmit = (name) => {
+    if (name) {
+      setListName(name);
+      setIsModalVisible(false);
+    } else {
+      Alert.alert('Error', 'Shopping list name cannot be empty');
     }
-  }, [list]);
+  };
 
-  const totalPrice = shoppingList.reduce((acc, item) => acc + (parseFloat(item.ItemPrice) * (item.quantity || 1)), 0);
+  const filteredItems = items.filter(item =>
+    item.ItemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.ItemCode.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const renderItem = ({ item, index }) => (
-    <View style={styles.item}>
+  const addToShoppingList = async (item) => {
+    const currentUser = auth.currentUser;
+    if (currentUser && selectedList) {
+      const userRef = firestore.collection('users').doc(currentUser.uid);
+      const supermarketRef = userRef.collection('shoppingLists').doc(selectedSupermarket);
+      const listRef = supermarketRef.collection('lists').doc(selectedList);
+      const listSnapshot = await listRef.get();
+
+      let updatedList;
+      if (listSnapshot.exists) {
+        updatedList = listSnapshot.data().items || [];
+        const existingItem = updatedList.find(i => i.ItemCode === item.ItemCode);
+        if (existingItem) {
+          updatedList = updatedList.map(i =>
+            i.ItemCode === item.ItemCode ? { ...i, quantity: (i.quantity || 1) + 1 } : i
+          );
+        } else {
+          updatedList.push({ ...item, quantity: 1 });
+        }
+      } else {
+        updatedList = [{ ...item, quantity: 1 }];
+      }
+
+      await listRef.set({ listName: selectedList, items: updatedList }, { merge: true });
+      setShoppingList(updatedList);
+    } else {
+      Alert.alert('Error', 'Shopping list name is not set. Please try again.');
+    }
+  };
+
+  const renderSupermarketItem = ({ item }) => (
+    <View style={styles.itemContainer}>
       <Text style={styles.itemName}>{item.ItemName}</Text>
       <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
-      <Text style={styles.itemPrice}>מחיר: {item.ItemPrice} ₪</Text>
-      <View style={styles.quantityContainer}>
-        <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) + 1)}>
-          <FontAwesome name='plus' style={styles.quantityIcon} />
-        </TouchableOpacity>
-        <TextInput
-          style={styles.quantityInput}
-          keyboardType="numeric"
-          onChangeText={(text) => updateQuantity(index, text)}
-          value={item.quantity ? item.quantity.toString() : ''}
-        />
-        <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) - 1)}>
-          <FontAwesome name='minus' style={styles.quantityIcon} />
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity onPress={() => deleteItem(item)} style={styles.deleteButton}>
-        <FontAwesome name='trash' style={styles.deleteIcon} />
+      <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
+      <TouchableOpacity onPress={() => addToShoppingList(item)}>
+        <FontAwesome name='plus' size={22} color="gray" />
       </TouchableOpacity>
     </View>
   );
 
-  const deleteItem = async (itemToDelete) => {
-    try {
-      const updatedList = shoppingList.filter(item => item !== itemToDelete);
-      setShoppingList(updatedList);
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(list.listName).update({ items: updatedList });
-        Alert.alert('Success', 'Item deleted successfully.');
-      }
-    } catch (error) {
-      console.error('Error deleting item:', error);
-      Alert.alert('Error', 'Failed to delete item. Please try again later.');
-    }
-  };
-
-  const updateQuantity = (index, text) => {
-    const updatedList = [...shoppingList];
-    updatedList[index].quantity = text;
-    setShoppingList(updatedList);
-  };
-
-  const clearAllItems = () => {
-    Alert.alert(
-      'Clear All Items',
-      'Are you sure you want to clear all items from the list?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'OK', onPress: () => handleClearAllItems() },
-      ],
-      { cancelable: false }
-    );
-  };
-
-  const handleClearAllItems = async () => {
-    try {
-      setShoppingList([]);
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(list.listName).update({ items: [] });
-        Alert.alert('Success', 'All items cleared successfully.');
-      }
-    } catch (error) {
-      console.error('Error clearing items:', error);
-      Alert.alert('Error', 'Failed to clear items. Please try again later.');
-    }
-  };
-
-  const saveShoppingList = async () => {
-    try {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(list.listName).update({ items: shoppingList });
-        Alert.alert('Success', 'Shopping list updated successfully.');
-      }
-    } catch (error) {
-      console.error('Error saving shopping list:', error);
-      Alert.alert('Error', 'Failed to update shopping list. Please try again later.');
-    }
-  };
-
-  const handleShare = async () => {
-    try {
-      const itemsText = shoppingList.map(item => `${item.ItemName}: ${item.quantity}`).join('\n');
-      await Share.share({
-        message: itemsText,
-      });
-    } catch (error) {
-      console.error('Error sharing shopping list:', error.message);
-    }
-  };
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{list.listName}</Text>
-      <FlatList
-        data={shoppingList}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
+      <Text style={styles.title}>Select Supermarket and List</Text>
+      
+      <Picker
+        selectedValue={selectedSupermarket}
+        style={styles.picker}
+        onValueChange={(itemValue) => setSelectedSupermarket(itemValue)}
+      >
+        <Picker.Item label="Select a supermarket" value="" />
+        {supermarkets.map((supermarket) => (
+          <Picker.Item key={supermarket} label={supermarket} value={supermarket} />
+        ))}
+      </Picker>
+
+      <Picker
+        selectedValue={selectedList}
+        style={styles.picker}
+        onValueChange={(itemValue) => setSelectedList(itemValue)}
+      >
+        <Picker.Item label="Select a list" value="" />
+        {lists.map((list) => (
+          <Picker.Item key={list} label={list} value={list} />
+        ))}
+      </Picker>
+
+      <CustomPrompt
+        visible={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        onSubmit={handlePromptSubmit}
       />
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity onPress={clearAllItems} style={styles.button}>
-          <FontAwesome name="trash" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>מחק את הרשימה</Text>
+
+      <View style={styles.searchContainer}>
+        <TouchableOpacity style={styles.searchButton} onPress={() => setSearchQuery('')}>
+          <FontAwesome name='search' />
         </TouchableOpacity>
-        <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
-          <FontAwesome name="save" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>שמור את הרשימה</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleShare} style={styles.button}>
-          <FontAwesome name="share" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>שתף את הרשימה</Text>
-        </TouchableOpacity>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="חפש מוצר..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
       </View>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <FontAwesome name="arrow-left" style={styles.backIcon} />
-        <Text style={styles.backText}>חזור לרשימת המוצרים</Text>
+
+      <TouchableOpacity style={styles.createListButton} onPress={() => setIsModalVisible(true)}>
+        <FontAwesome name='plus' size={22} color="white" />
+        <Text style={styles.createListButtonText}>ליצור רשימה חדשה</Text>
       </TouchableOpacity>
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalText}>סה"כ: {totalPrice.toFixed(2)} ₪</Text>
-      </View>
+
+      <Text style={styles.supermarketName}>רשימת המוצרים</Text>
+
+      <FlatList
+        data={filteredItems}
+        renderItem={renderSupermarketItem}
+        keyExtractor={item => item.id.toString()}
+      />
+
+      <TouchableOpacity style={styles.listButton} onPress={() => navigation.navigate('SupermarketLists', { supermarketName: selectedSupermarket })}>
+        <FontAwesome name="list" size={24} color="white" style={styles.listIcon} />
+        <Text style={styles.listButtonText}>הצג את הרשימות שלי</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -325,6 +198,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    marginTop:40
   },
   title: {
     fontSize: 24,
@@ -332,10 +206,50 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  item: {
-    padding: 15,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 5,
+  picker: {
+    height: 50,
+    width: '100%',
+    marginBottom: 20,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  searchInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 40,
+  },
+  searchButton: {
+    marginRight: 10,
+  },
+  createListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#635A5A',
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  createListButtonText: {
+    color: 'white',
+    marginLeft: 10,
+  },
+  supermarketName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderColor: 'gray',
     marginBottom: 10,
   },
   itemName: {
@@ -344,83 +258,21 @@ const styles = StyleSheet.create({
   },
   ItemCode: {
     fontSize: 14,
-    color: '#555',
   },
   itemPrice: {
     fontSize: 14,
-    color: '#555',
   },
-  quantityContainer: {
+  listButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    padding: 15,
+    backgroundColor: '#635A5A',
+    borderRadius: 8,
   },
-  quantityIcon: {
-    fontSize: 20,
-    color: '#e9a1a1',
-    marginHorizontal: 10,
-  },
-  quantityInput: {
-    width: 40,
-    height: 30,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    textAlign: 'center',
-    marginHorizontal: 10,
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-  },
-  deleteIcon: {
-    fontSize: 20,
-    color: '#e9a1a1',
-  },
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 20,
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#e9a1a1',
-    borderRadius: 5,
-  },
-  buttonIcon: {
-    fontSize: 20,
-    color: '#fff',
-    marginRight: 10,
-  },
-  buttonText: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    marginTop: 10,
-  },
-  backIcon: {
-    fontSize: 20,
-    color: '#e9a1a1',
-    marginRight: 10,
-  },
-  backText: {
-    fontSize: 16,
-    color: '#e9a1a1',
-  },
-  totalContainer: {
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  totalText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  listButtonText: {
+    color: 'white',
+    marginLeft: 10,
   },
 });
 
-export default ItemsScreen;
+export default CombinedScreen;

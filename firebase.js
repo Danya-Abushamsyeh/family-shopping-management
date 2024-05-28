@@ -22,6 +22,7 @@ if (!firebase.apps.length) {
 export const auth = firebase.auth();
 export const firestore = firebase.firestore();
 export const database = firebase.database();
+export const fieldValue = firebase.firestore.FieldValue;
 
 export const createUserDocument = async (user, additionalData) => {
   if (!user) return;
