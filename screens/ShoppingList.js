@@ -146,12 +146,22 @@ const ShoppingList = () => {
 
   const deleteItem = async (itemToDelete) => {
     try {
-      const updatedList = shoppingList.filter(item => item !== itemToDelete);
+      const updatedList = shoppingList.filter(item => item.id !== itemToDelete.id);
       setShoppingList(updatedList);
+
       const currentUser = auth.currentUser;
       if (currentUser) {
         const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName).update({ items: updatedList });
+        await userRef
+          .collection('shoppingLists')
+          .doc(supermarketName)
+          .collection('lists')
+          .doc(listName)
+          .update({ items: updatedList });
+
+        const sharedListRef = firestore.collection('sharedLists').doc(listName);
+        await sharedListRef.update({ items: updatedList });
+
         Alert.alert('בוצע', 'פריט נמחק בהצלחה.');
       }
     } catch (error) {
@@ -160,10 +170,24 @@ const ShoppingList = () => {
     }
   };
 
-  const updateQuantity = (index, text) => {
+  const updateQuantity = async (index, text) => {
     const updatedList = [...shoppingList];
     updatedList[index].quantity = text;
     setShoppingList(updatedList);
+
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const userRef = firestore.doc(`users/${currentUser.uid}`);
+      await userRef
+        .collection('shoppingLists')
+        .doc(supermarketName)
+        .collection('lists')
+        .doc(listName)
+        .update({ items: updatedList });
+
+      const sharedListRef = firestore.collection('sharedLists').doc(listName);
+      await sharedListRef.update({ items: updatedList });
+    }
   };
 
   const clearAllItems = () => {
@@ -184,7 +208,16 @@ const ShoppingList = () => {
       const currentUser = auth.currentUser;
       if (currentUser) {
         const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName).update({ items: [] });
+        await userRef
+          .collection('shoppingLists')
+          .doc(supermarketName)
+          .collection('lists')
+          .doc(listName)
+          .update({ items: [] });
+
+        const sharedListRef = firestore.collection('sharedLists').doc(listName);
+        await sharedListRef.update({ items: [] });
+
         Alert.alert('בוצע', 'כל הפריטים נוקו בהצלחה.');
       }
     } catch (error) {
@@ -198,7 +231,16 @@ const ShoppingList = () => {
       const currentUser = auth.currentUser;
       if (currentUser) {
         const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName).update({ items: shoppingList });
+        await userRef
+          .collection('shoppingLists')
+          .doc(supermarketName)
+          .collection('lists')
+          .doc(listName)
+          .update({ items: shoppingList });
+
+        const sharedListRef = firestore.collection('sharedLists').doc(listName);
+        await sharedListRef.update({ items: shoppingList });
+
         Alert.alert('בוצע', 'רשימת הקניות עודכנה בהצלחה.');
       }
     } catch (error) {

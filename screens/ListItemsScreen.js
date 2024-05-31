@@ -42,6 +42,7 @@ const ListItemsScreen = ({ route }) => {
     item.ItemCode.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  
   const addToShoppingList = async (item) => {
     const currentUser = auth.currentUser;
     if (currentUser && listName) {
@@ -62,7 +63,8 @@ const ListItemsScreen = ({ route }) => {
           updatedList.push({ ...item, quantity: 1 });
         }
       } else {
-        updatedList = [{ ...item, quantity: 1 }];
+        Alert.alert('שגיאה', 'רשימת הקניות לא נמצאה. בבקשה נסה שוב.');
+        return;
       }
 
       await listRef.set({ listName, items: updatedList }, { merge: true });
@@ -71,6 +73,8 @@ const ListItemsScreen = ({ route }) => {
       Alert.alert('שגיאה', 'שם רשימת הקניות לא הוגדר. בבקשה נסה שוב.');
     }
   };
+  
+
 
   const renderSupermarketItem = ({ item }) => (
     <View style={styles.itemContainer}>
