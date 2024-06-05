@@ -9,15 +9,17 @@ const ShoppingList = () => {
   const route = useRoute();
   const { supermarketName, listName } = route.params || {};
   const [shoppingList, setShoppingList] = useState([]);
-  const [listNameState, setListNameState] = useState('');
+  const [listNameState, setListNameState] = useState(listName);
   const [loading, setLoading] = useState(true);
   const [shareEmail, setShareEmail] = useState('');
+  const [isSharedList, setIsSharedList] = useState(false);
 
   useEffect(() => {
     const fetchItems = async () => {
       try {
         const userId = auth.currentUser.uid;
 
+        // Check if the user owns the list or it's a shared list
         const listDocRef = firestore
           .collection('users')
           .doc(userId)
@@ -30,17 +32,18 @@ const ShoppingList = () => {
           if (doc.exists) {
             const { items, listName: fetchedListName } = doc.data();
             setShoppingList(items || []);
-            setListNameState(fetchedListName || '');
+            setListNameState(fetchedListName || listName);
+            setIsSharedList(false);
           } else {
-            // If the document doesn't exist in the user's collection, check the shared lists
             const sharedListRef = firestore.collection('sharedLists').doc(listName);
             const sharedDoc = await sharedListRef.get();
             if (sharedDoc.exists) {
-              const { items, listName: fetchedListName, sharedWith, sharedBy } = sharedDoc.data();
+              const { items, listName: fetchedListName, sharedWith } = sharedDoc.data();
               const userId = auth.currentUser.uid;
               if (sharedWith.includes(userId)) {
                 setShoppingList(items || []);
-                setListNameState(fetchedListName || '');
+                setListNameState(fetchedListName || listName);
+                setIsSharedList(true);
               } else {
                 Alert.alert('Error', 'You do not have access to this list.');
                 navigation.goBack();
@@ -62,6 +65,27 @@ const ShoppingList = () => {
 
     fetchItems();
   }, [route.params]);
+
+  const updateList = async (updatedList) => {
+    try {
+      if (isSharedList) {
+        const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
+        await sharedListRef.update({ items: updatedList });
+      } else {
+        const userId = auth.currentUser.uid;
+        const userRef = firestore.doc(`users/${userId}`);
+        await userRef
+          .collection('shoppingLists')
+          .doc(supermarketName)
+          .collection('lists')
+          .doc(listNameState)
+          .update({ items: updatedList });
+      }
+    } catch (error) {
+      console.error('Error updating list:', error);
+      Alert.alert('Error', 'Failed to update list. Please try again later.');
+    }
+  };
 
   const shareList = async () => {
     if (!shareEmail) {
@@ -91,7 +115,7 @@ const ShoppingList = () => {
             sharedWith: [shareUserId],
             items: shoppingList,
             listName: listNameState,
-            supermarketName: supermarketName, // Ensure supermarketName is included in the creation
+            supermarketName, // Ensure supermarketName is included in the creation
             sharedBy: currentUser // Include the user who shared the list
           });
         }
@@ -123,7 +147,8 @@ const ShoppingList = () => {
     <View style={styles.item}>
       <Text style={styles.itemName}>{item.ItemName}</Text>
       <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
-      <Text style={styles.itemPrice}>מחיר: {item.UnitOfMeasurePrice} ₪ ל {item.UnitQty}</Text>
+      <Text style={styles.ItemCode}>מחיר: {item.ItemPrice}</Text>
+      <Text style={styles.itemPrice}> {item.UnitOfMeasurePrice} ₪ ל {item.UnitOfMeasure}</Text>
       <View style={styles.quantityContainer}>
         <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) + 1)}>
           <FontAwesome name='plus' style={styles.quantityIcon} />
@@ -146,24 +171,21 @@ const ShoppingList = () => {
 
   const deleteItem = async (itemToDelete) => {
     try {
-      const updatedList = shoppingList.filter(item => item !== itemToDelete);
+      const updatedList = shoppingList.filter(item => item.id !== itemToDelete.id);
       setShoppingList(updatedList);
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName).update({ items: updatedList });
-        Alert.alert('בוצע', 'פריט נמחק בהצלחה.');
-      }
+      await updateList(updatedList);
+      Alert.alert('בוצע', 'פריט נמחק בהצלחה.');
     } catch (error) {
       console.error('Error deleting item:', error);
       Alert.alert('שגיאה', 'מחיקת הפריט נכשלה. בבקשה נסה שוב מאוחר יותר.');
     }
   };
 
-  const updateQuantity = (index, text) => {
+  const updateQuantity = async (index, text) => {
     const updatedList = [...shoppingList];
     updatedList[index].quantity = text;
     setShoppingList(updatedList);
+    await updateList(updatedList);
   };
 
   const clearAllItems = () => {
@@ -181,12 +203,8 @@ const ShoppingList = () => {
   const handleClearAllItems = async () => {
     try {
       setShoppingList([]);
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName).update({ items: [] });
-        Alert.alert('בוצע', 'כל הפריטים נוקו בהצלחה.');
-      }
+      await updateList([]);
+      Alert.alert('בוצע', 'כל הפריטים נוקו בהצלחה.');
     } catch (error) {
       console.error('Error clearing items:', error);
       Alert.alert('שגיאה', 'נכשל בניקוי הפריטים. בבקשה נסה שוב מאוחר יותר.');
@@ -195,12 +213,8 @@ const ShoppingList = () => {
 
   const saveShoppingList = async () => {
     try {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userRef = firestore.doc(`users/${currentUser.uid}`);
-        await userRef.collection('shoppingLists').doc(supermarketName).collection('lists').doc(listName).update({ items: shoppingList });
-        Alert.alert('בוצע', 'רשימת הקניות עודכנה בהצלחה.');
-      }
+      await updateList(shoppingList);
+      Alert.alert('בוצע', 'רשימת הקניות עודכנה בהצלחה.');
     } catch (error) {
       console.error('Error saving shopping list:', error);
       Alert.alert('שגיאה', 'עדכון רשימת הקניות נכשל. בבקשה נסה שוב מאוחר יותר.');
@@ -209,7 +223,7 @@ const ShoppingList = () => {
 
   return (
     <View style={styles.container}>
-      {loading ? ( 
+      {loading ? (
         <ActivityIndicator size="large" color="#e9a1a1" />
       ) : (
         <>
@@ -219,7 +233,7 @@ const ShoppingList = () => {
             renderItem={renderItem}
             keyExtractor={(item, index) => `${item.id}-${index}`}
           />
-          <TouchableOpacity onPress={() => navigation.navigate('ListItems', { supermarketName, listName })} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.navigate('ListItems', { supermarketName, listName:listNameState })} style={styles.backButton}>
             <FontAwesome name="arrow-left" style={styles.backIcon} />
             <Text style={styles.backText}>חזור לרשימת המוצרים</Text>
           </TouchableOpacity>
@@ -234,27 +248,26 @@ const ShoppingList = () => {
               value={shareEmail}
               onChangeText={setShareEmail}
             />
-              <TouchableOpacity style={styles.button} onPress={shareList}>
-              <FontAwesome name="share" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>שתף את הרשימה</Text>
-            </TouchableOpacity>
+            
           </View>
 
           <View style={styles.buttonsContainer}>
-            
             <TouchableOpacity onPress={clearAllItems} style={styles.button}>
               <FontAwesome name="trash" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>מחק את הרשימה</Text>
+              <Text style={styles.buttonText}>מחק את הכל</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={shareList}>
+              <FontAwesome name="share" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>שתף את הרשימה</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
               <FontAwesome name="save" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>שמור שינויים</Text>
             </TouchableOpacity>
-          
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AddFamilyMember')}>
+            {/* <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AddFamilyMember')}>
               <FontAwesome name="users" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>הוסף בן משפחה</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </>
       )}
@@ -336,11 +349,12 @@ const styles = StyleSheet.create({
     padding: 3,
     backgroundColor: '#e9a1a1',
     borderRadius: 5,
+    paddingHorizontal:1
   },
   buttonIcon: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#fff',
-    marginRight: 10,
+    marginRight: 5,
     fontWeight:'bold'
   },
   buttonText: {
@@ -351,8 +365,8 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    marginTop: 10,
+    // padding: 5,
+    // marginTop: 10,
   },
   backIcon: {
     fontSize: 20,
@@ -379,13 +393,14 @@ const styles = StyleSheet.create({
   shareContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
+    // marginTop: 20,
+    padding:5
   },
   shareInput: {
     flex: 1,
     borderColor: '#ccc',
     borderWidth: 1,
-    padding: 6,
+    padding: 3,
     borderRadius: 5,
   },
 });

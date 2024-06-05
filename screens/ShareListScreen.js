@@ -1,5 +1,5 @@
 // SharedListsScreen.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback  } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { auth, firestore } from './../firebase';
@@ -9,8 +9,8 @@ const ShareList = () => {
   const [sharedLists, setSharedLists] = useState([]);
   const [receivedLists, setReceivedLists] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
     const fetchLists = async () => {
       const currentUser = auth.currentUser;
 
@@ -46,9 +46,16 @@ const ShareList = () => {
         setSharedLists(sharedListsData);
         setReceivedLists(receivedListsData);
         setLoading(false);
+        setRefreshing(false);
       }
     };
 
+  useEffect(() => {
+    fetchLists();
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
     fetchLists();
   }, []);
 
@@ -75,12 +82,16 @@ const ShareList = () => {
             data={sharedLists}
             renderItem={renderListItem}
             keyExtractor={(item) => item.id}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
           />
           <Text style={styles.sectionTitle}>רשימות ששותפו איתך</Text>
           <FlatList
             data={receivedLists}
             renderItem={renderListItem}
             keyExtractor={(item) => item.id}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
           />
         </>
       )}

@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
       paddingLeft: 10,
       justifyContent: 'center',
       alignItems: 'center',
-      textAlign:'right'
+      textAlign:'left',
     },
     buttonContainer: {
       marginTop: 20,

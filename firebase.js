@@ -3,6 +3,7 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 import 'firebase/compat/database';
+import 'firebase/compat/storage'; 
 
 const firebaseConfig = {
   apiKey: "AIzaSyCLBP1DtXiz-daQl1bHRnJXhd0t7W1m3Ww",
@@ -22,6 +23,7 @@ if (!firebase.apps.length) {
 export const auth = firebase.auth();
 export const firestore = firebase.firestore();
 export const database = firebase.database();
+export const storage = firebase.storage(); 
 export const fieldValue = firebase.firestore.FieldValue;
 
 export const createUserDocument = async (user, additionalData) => {
@@ -60,6 +62,18 @@ export const getUserDocument = async (uid) => {
   }
 };
 
+
+export const uploadProfilePicture = async (uri) => {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const user = auth.currentUser;
+  const ref = storage.ref().child(`profilePictures/${user.uid}`);
+  const snapshot = await ref.put(blob);
+  const downloadURL = await snapshot.ref.getDownloadURL();
+  await user.updateProfile({ photoURL: downloadURL });
+  return downloadURL;
+};;
+
 export const getItemsBySupermarket = async (supermarket) => {
   try {
     const snapshot = await firebase.database().ref(`${supermarket}Items`).once('value');
@@ -76,88 +90,38 @@ export const getItemsBySupermarket = async (supermarket) => {
   }
 };
 
-export const createShoppingList = async (userEmail, listName, items) => {
-  try {
-    const docRef = await firestore.collection('shoppingLists').add({
-      listName,
-      items,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      userEmail,
-      
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating shopping list:', error);
-    return null;
+export const getItemsFromAllSupermarkets = async () => {
+  const supermarketNames = ['YohananofItems', 'osheradItems', 'ramilaviItems', 'shupersalItems', 'tivtaamItems', 'vectoryItems'];
+  const items = {};
+
+  for (const supermarket of supermarketNames) {
+    const snapshot = await database.ref(`${supermarket}`).once('value');
+    items[supermarket] = snapshot.val();
   }
+
+  return items;
 };
-// export const createShoppingList = async (listName, userId) => {
-//   try {
-//     const listRef = firestore.collection('shoppingLists').doc();
-//     await listRef.set({
-//       name: listName,
-//       items: [],
-//       collaborators: [userId]
-//     });
-//     return listRef.id;
-//   } catch (error) {
-//     console.error('Error creating shopping list', error);
-//     return null;
-//   }
-// };
-// export const createShoppingList = async (userEmail, listName, items) => {
-//   try {
-//     await firestore.collection('shoppingLists').doc(userEmail).set({
-//       listName,
-//       items,
-//       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-//     });
-//     return userEmail; // Return the user's email as the ID
-//   } catch (error) {
-//     console.error('Error creating shopping list:', error);
-//     return null;
-//   }
-// };
 
-// export const deleteShoppingList = async (userEmail, listId) => {
-//   try {
-//     await firestore.collection('shoppingLists').doc(userEmail).collection('lists').doc(listId).delete();
-//     return true;
-//   } catch (error) {
-//     console.error('Error deleting shopping list:', error);
-//     return false;
-//   }
-// };
+export const searchItemAcrossSupermarkets = (items, itemCode) => {
+  const results = [];
 
-// export const updateShoppingList = async (listId, updatedList) => {
-//   try {
-//     const listRef = firestore.collection('shoppingLists').doc(listId);
-//     await listRef.update({ items: updatedList });
-//   } catch (error) {
-//     console.error('Error updating shopping list', error);
-//   }
-// };
-// export const updateShoppingList = async (userEmail, listId, newData) => {
-//   try {
-//     await firestore.collection('shoppingLists').doc(userEmail).collection('lists').doc(listId).update(newData);
-//     return true;
-//   } catch (error) {
-//     console.error('Error updating shopping list:', error);
-//     return false;
-//   }
-// };
-export const addCollaborator = async (listId, email) => {
-  try {
-    const userSnapshot = await firestore.collection('users').where('email', '==', email).get();
-    if (!userSnapshot.empty) {
-      const userId = userSnapshot.docs[0].id;
-      const listRef = firestore.collection('shoppingLists').doc(listId);
-      await listRef.update({
-        collaborators: firebase.firestore.FieldValue.arrayUnion(userId)
-      });
+  for (const [supermarket, itemList] of Object.entries(items)) {
+    for (const item of itemList) {
+      if (item.ItemCode === itemCode) {
+        results.push({
+          supermarket,
+          itemCode: item.ItemCode,
+          itemName: item.ItemName,
+          itemPrice: item.ItemPrice,
+          availability: true
+        });
+      }
     }
-  } catch (error) {
-    console.error('Error adding collaborator', error);
   }
+
+  return results;
 };
+
+
+
 export default firebase;
