@@ -14,6 +14,7 @@ import ListItemsScreen   from '../screens/ListItemsScreen';
 import ShareListScreen from '../screens/ShareListScreen';
 import AddFamilyMember from '../screens/AddFamilyMember';
 import ComparePricesScreen from '../screens/ComparePricesScreen'
+import CompareSupermarketsScreen from '../screens/CompareSupermarketsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -55,7 +56,7 @@ const TabNavigation = () => {
       <Tab.Screen name='ShareList' component={ShareListScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>
       <Tab.Screen name='AddFamilyMember' component={AddFamilyMember} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>
       <Tab.Screen name='ComparePrices' component={ComparePricesScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
-
+      <Tab.Screen name='CompareSupermarkets' component={CompareSupermarketsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
     </Tab.Navigator>
   );
 };

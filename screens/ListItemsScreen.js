@@ -9,7 +9,7 @@ import CustomPrompt from './../CustomModal/CustomPrompt';
 const ListItemsScreen = ({ route }) => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
-  const { supermarketName, listName: selectedListName } = route.params; // Destructure listName from params
+  const { supermarketName, listName: selectedListName } = route.params|| {}; 
   const [items, setItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [shoppingList, setShoppingList] = useState([]);

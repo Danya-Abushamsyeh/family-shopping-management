@@ -68,25 +68,44 @@ const ShoppingList = () => {
 
   const updateList = async (updatedList) => {
     try {
+      const userId = auth.currentUser.uid;
+      const userRef = firestore.doc(`users/${userId}`);
+  
       if (isSharedList) {
+        // Update the shared list
         const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
         await sharedListRef.update({ items: updatedList });
+  
+        // Update the receivedLists reference for collaborators
+        const sharedDoc = await sharedListRef.get();
+        const sharedData = sharedDoc.data();
+        for (const sharedUserId of sharedData.sharedWith) {
+          const sharedUserRef = firestore.collection('users').doc(sharedUserId);
+          const sharedUserDoc = await sharedUserRef.get();
+          const sharedUserData = sharedUserDoc.data();
+          const updatedReceivedLists = sharedUserData.receivedLists.map((list) => {
+            if (list.listName === listNameState && list.supermarketName === supermarketName) {
+              return { ...list, items: updatedList };
+            }
+            return list;
+          });
+          await sharedUserRef.update({ receivedLists: updatedReceivedLists });
+        }
       } else {
-        const userId = auth.currentUser.uid;
-        const userRef = firestore.doc(`users/${userId}`);
-        await userRef
+        // Update the user's personal list
+        const listRef = userRef
           .collection('shoppingLists')
           .doc(supermarketName)
           .collection('lists')
-          .doc(listNameState)
-          .update({ items: updatedList });
+          .doc(listNameState);
+        await listRef.update({ items: updatedList });
       }
     } catch (error) {
       console.error('Error updating list:', error);
       Alert.alert('Error', 'Failed to update list. Please try again later.');
     }
   };
-
+  
   const shareList = async () => {
     if (!shareEmail) {
       Alert.alert('Error', 'Please enter an email to share the list with.');
@@ -171,7 +190,7 @@ const ShoppingList = () => {
 
   const deleteItem = async (itemToDelete) => {
     try {
-      const updatedList = shoppingList.filter(item => item.id !== itemToDelete.id);
+      const updatedList = shoppingList.filter((item) => item.id !== itemToDelete.id);
       setShoppingList(updatedList);
       await updateList(updatedList);
       Alert.alert('בוצע', 'פריט נמחק בהצלחה.');
@@ -248,7 +267,10 @@ const ShoppingList = () => {
               value={shareEmail}
               onChangeText={setShareEmail}
             />
-            
+            <TouchableOpacity style={styles.button} onPress={shareList}>
+              <FontAwesome name="share" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>שתף את הרשימה</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.buttonsContainer}>
@@ -256,9 +278,10 @@ const ShoppingList = () => {
               <FontAwesome name="trash" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>מחק את הכל</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={shareList}>
-              <FontAwesome name="share" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>שתף את הרשימה</Text>
+
+            <TouchableOpacity onPress={() => navigation.navigate('CompareSupermarkets', { shoppingList, supermarketName, listName })} style={styles.button}>
+              <FontAwesome name="balance-scale" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>השווה סופרמרקטים</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
               <FontAwesome name="save" style={styles.buttonIcon} />
@@ -346,10 +369,11 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 3,
+    padding: 5,
     backgroundColor: '#e9a1a1',
     borderRadius: 5,
-    paddingHorizontal:1
+    paddingHorizontal:4,
+
   },
   buttonIcon: {
     fontSize: 18,
@@ -392,16 +416,24 @@ const styles = StyleSheet.create({
   },
   shareContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    // alignItems: 'center',
     // marginTop: 20,
-    padding:5
+    padding:5,
+    // paddingHorizontal:20
+    justifyContent: 'space-around',
+    // marginVertical: 20,
+    // right:12,
+    
   },
   shareInput: {
-    flex: 1,
     borderColor: '#ccc',
     borderWidth: 1,
     padding: 3,
     borderRadius: 5,
+    // height:28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal:57
   },
 });
 
