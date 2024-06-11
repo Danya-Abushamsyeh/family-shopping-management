@@ -70,12 +70,15 @@ const CompareSupermarketsScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        {/* <TouchableOpacity style={styles.navItem} onPress={() => navigation.goBack()}>
-          <FontAwesome name="arrow-left" size={24} color="#fff" />
-        </TouchableOpacity> */}
-        {/* <Image source={require('./../assets/images/Image.jpg')} style={styles.logo} /> */}
+        
       </View>
-      <Text style={styles.title}>השוואת מחירים עבור רשימת הקניות שלך</Text>
+      <View style={styles.rowww}>
+        <TouchableOpacity onPress={() => navigation.navigate('ShoppingList', { supermarketName, listName })} style={styles.backButton}>
+         <FontAwesome name="arrow-left" style={styles.backIcon} />
+        {/* <Text style={styles.backText}>חזור לרשימה שלי</Text> */}
+        </TouchableOpacity>
+        <Text style={styles.title}>השוואת מחירים עבור רשימת הקניות שלך</Text>
+      </View>
       {loading ? (
         <ActivityIndicator size="large" color="#e9a1a1" />
       ) : (
@@ -85,10 +88,7 @@ const CompareSupermarketsScreen = () => {
           keyExtractor={(item, index) => `${item.supermarket}-${index}`}
         />
       )}
-      <TouchableOpacity onPress={() => navigation.navigate('ShoppingList', { supermarketName, listName })} style={styles.backButton}>
-        <FontAwesome name="arrow-left" style={styles.backIcon} />
-        <Text style={styles.backText}>חזור לרשימה שלי</Text>
-      </TouchableOpacity>
+
     </View>
   );
 };
@@ -112,9 +112,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  rowww:{
+    flexDirection: 'row',
+    backgroundColor: '#e9a1a1',
+
+  },
   navItem: {
     marginLeft: 20,
-    marginTop: 39,
+    marginTop: 20,
   },
   title: {
     fontSize: 24,
@@ -123,11 +128,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     backgroundColor: '#e9a1a1',
     color:'#fff',
+    padding:20
   },
   itemContainer: {
     padding: 15,
     backgroundColor: '#fff',
-    borderRadius: 5,
+    borderRadius: 7,
     marginBottom: 10,
     elevation: 2,
   },
@@ -159,7 +165,7 @@ const styles = StyleSheet.create({
   },
   backIcon: {
     fontSize: 20,
-    color: '#e9a1a1',
+    color: '#fff',
     marginLeft: 10,
   },
   backText: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import {Image, View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import firebase, { firestore, auth, fieldValue } from './../firebase';
@@ -164,6 +164,7 @@ const ShoppingList = () => {
 
   const renderItem = ({ item, index }) => (
     <View style={styles.item}>
+      <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
       <Text style={styles.itemName}>{item.ItemName}</Text>
       <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
       <Text style={styles.ItemCode}>מחיר: {item.ItemPrice}</Text>
@@ -317,6 +318,12 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
   },
+  itemImage: {
+    width:50,
+    height: 90,
+    paddingRight:80,
+    marginLeft:220
+  },
   itemName: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -330,8 +337,8 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 14,
     color: '#555',
-    textAlign:'right'
-
+    textAlign:'right',
+    left:5
   },
   quantityContainer: {
     flexDirection: 'row',

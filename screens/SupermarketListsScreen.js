@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator }
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { auth, firestore } from './../firebase';
 import React, { useEffect, useState } from 'react';
+import { FontAwesome } from '@expo/vector-icons';
 
 const SupermarketListsScreen = () => {
   const navigation = useNavigation();
@@ -56,6 +57,10 @@ const SupermarketListsScreen = () => {
           keyExtractor={(item) => item.id}
         />
       )}
+       <TouchableOpacity onPress={() => navigation.navigate('ListItems', { supermarketName })} style={styles.backButton}>
+            <FontAwesome name="arrow-left" style={styles.backIcon} />
+            <Text style={styles.backText}>חזור לרשימת המוצרים</Text>
+       </TouchableOpacity>
     </View>
   );
 };
@@ -80,6 +85,21 @@ const styles = StyleSheet.create({
   },
   listName: {
     fontSize: 18,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    // padding: 5,
+    // marginTop: 10,
+  },
+  backIcon: {
+    fontSize: 20,
+    color: '#e9a1a1',
+    marginRight: 10,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#e9a1a1',
   },
 });
 

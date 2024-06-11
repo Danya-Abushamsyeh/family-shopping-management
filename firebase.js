@@ -4,6 +4,19 @@ import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 import 'firebase/compat/database';
 import 'firebase/compat/storage'; 
+import axios from 'axios';
+
+// Google API keys and Custom Search Engine ID
+const apiKeys = [
+  'AIzaSyAwtcAodl_4QdvERIqBVW4kZlNkYmCU64s',
+  'AIzaSyCeKZ48A1S8gPx9vFNQj88NtddMPJwhgOw',
+  'AIzaSyBm7EpqydsmGjWD_o438DeDVcS7PivzOLA',
+  'AIzaSyBfmtB30gcGtn9cz4CaMSX4zkDUbfyngcc'
+];
+const cx = '84597da9d23754ba9';
+
+
+let currentApiKeyIndex = 0;
 
 const firebaseConfig = {
   apiKey: "AIzaSyCLBP1DtXiz-daQl1bHRnJXhd0t7W1m3Ww",
@@ -25,6 +38,82 @@ export const firestore = firebase.firestore();
 export const database = firebase.database();
 export const storage = firebase.storage(); 
 export const fieldValue = firebase.firestore.FieldValue;
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const getNextApiKey = () => {
+  currentApiKeyIndex = (currentApiKeyIndex + 1) % apiKeys.length;
+  return apiKeys[currentApiKeyIndex];
+};
+
+export const fetchImageUrl = async (query) => {
+  const url = `https://www.googleapis.com/customsearch/v1?q=${query}&cx=${cx}&key=${getNextApiKey()}&searchType=image&num=1`;
+  try {
+    const response = await axios.get(url);
+    const data = response.data;
+    if (data.items && data.items.length > 0) {
+      return data.items[0].link;
+    }
+  } catch (error) {
+    console.error('Error fetching image URL:', error);
+    if (error.response && error.response.status === 429) {
+      throw new Error('Rate limit hit');
+    }
+  }
+  return null;
+};
+
+export const updateProductImages = async () => {
+  const supermarketNames = ['YohananofItems', 'osheradItems', 'ramilaviItems', 'shupersalItems', 'tivtaamItems', 'vectoryItems'];
+  const batchSize = 10; // Process 10 items per batch
+  const maxRetry = 5; // Maximum number of retries
+
+  for (const supermarket of supermarketNames) {
+    const snapshot = await database.ref(`${supermarket}`).once('value');
+    const items = snapshot.val();
+    const itemKeys = Object.keys(items);
+
+    for (let i = 0; i < itemKeys.length; i += batchSize) {
+      const batch = itemKeys.slice(i, i + batchSize);
+      let retry = 0;
+
+      for (const key of batch) {
+        if (items[key].ItemName && !items[key].imageUrl) { 
+          let success = false;
+
+          while (!success && retry < maxRetry) {
+            try {
+              const imageUrl = await fetchImageUrl(items[key].ItemName);
+              if (imageUrl) {
+                await database.ref(`${supermarket}/${key}`).update({ imageUrl });
+                console.log(`Updated ${items[key].ItemName} with image URL: ${imageUrl}`);
+                success = true;
+              }
+            } catch (error) {
+              if (error.message === 'Rate limit hit') {
+                retry += 1;
+                const waitTime = Math.min(60 * 1000, Math.pow(2, retry) * 1000); // Exponential backoff with cap at 60 seconds
+                console.log(`Rate limit hit, waiting ${waitTime / 1000} seconds...`);
+                await sleep(waitTime);
+              } else {
+                console.error(`Error updating item ${items[key].ItemName}:`, error);
+                success = true; 
+              }
+            }
+          }
+
+          await sleep(200); // Add a delay between each request to avoid hitting the rate limit
+        }
+      }
+    }
+  }
+};
+
+updateProductImages().then(() => {
+  console.log('Product images updated successfully.');
+}).catch((error) => {
+  console.error('Error updating product images:', error);
+});
 
 export const createUserDocument = async (user, additionalData) => {
   if (!user) return;
@@ -57,11 +146,10 @@ export const getUserDocument = async (uid) => {
     const userDocument = await firestore.doc(`users/${uid}`).get();
     return { uid, ...userDocument.data() };
   } catch (error) {
-    console.error('Error fetching user document', error);
+    console.error('Error fetching user document:', error);
     return null;
   }
 };
-
 
 export const uploadProfilePicture = async (uri) => {
   const response = await fetch(uri);
@@ -72,13 +160,12 @@ export const uploadProfilePicture = async (uri) => {
   const downloadURL = await snapshot.ref.getDownloadURL();
   await user.updateProfile({ photoURL: downloadURL });
   return downloadURL;
-};;
+};
 
 export const getItemsBySupermarket = async (supermarket) => {
   try {
     const snapshot = await firebase.database().ref(`${supermarket}Items`).once('value');
     const itemsData = snapshot.val();
-    // Convert the object of items into an array of items
     const itemsArray = Object.keys(itemsData).map((key) => ({
       id: key,
       ...itemsData[key],
@@ -86,7 +173,7 @@ export const getItemsBySupermarket = async (supermarket) => {
     return itemsArray;
   } catch (error) {
     console.error('Error fetching items:', error);
-    return []; // Return an empty array in case of error
+    return []; 
   }
 };
 
@@ -121,7 +208,5 @@ export const searchItemAcrossSupermarkets = (items, itemCode) => {
 
   return results;
 };
-
-
 
 export default firebase;

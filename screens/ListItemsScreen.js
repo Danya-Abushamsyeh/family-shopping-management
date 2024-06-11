@@ -95,19 +95,26 @@ const ListItemsScreen = ({ route }) => {
 
   const renderSupermarketItem = ({ item }) => (
     <View style={styles.itemContainer}>
+     <View style={styles.roww}>
       <TouchableOpacity onPress={() => addToShoppingList(item)}>
         <FontAwesome name='plus' size={22} color="gray" />
       </TouchableOpacity>
-
+      <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
+      
+      </View>
       <Text style={styles.itemName}>{item.ItemName}</Text>
+
       <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
-      <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
+      <View style={styles.roww}>
       <TouchableOpacity onPress={() => comparePrices(item)} style={styles.compareButton}>
          <Image 
            source={require('./../assets/images/comper.png')} 
            style={{ width: 25, height: 25 }} 
          />      
       </TouchableOpacity>
+      <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
+
+      </View>
     </View>
   );
 
@@ -273,20 +280,31 @@ const styles = StyleSheet.create({
     // paddingHorizontal:8
 
   },
+  roww:{
+    flexDirection: 'row',
+  },
+  itemImage: {
+    width:50,
+    height: 90,
+    paddingRight:80,
+    marginLeft:220
+  },
   itemName: {
     fontWeight: 'bold',
     fontSize: 16,
     textAlign: 'right',
-    flexDirection:'row'
+    // left:110,
+    // marginTop:20
   },
   itemPrice: {
     color: '#888',
     fontSize: 14,
-    textAlign: 'right'
+    textAlign: 'right',
+    left:215
   },
   ItemCode: {
     color: '#888',
-    fontSize: 12,
+    fontSize: 13,
     marginLeft: 50,
     textAlign: 'right'
   },
