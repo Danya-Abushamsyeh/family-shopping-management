@@ -34,15 +34,11 @@ const ComparePricesScreen = () => {
   );
 
   const handleItemPress = (supermarket) => {
-    navigation.navigate('ListItems', {
-      supermarketName: supermarket,
-      itemCode,
-      itemName
-    });
+    navigation.navigate('ListItems', supermarket);
   };
 
   const renderComparisonItem = ({ item }) => (
-    <TouchableOpacity onPress={() => handleItemPress(item.supermarket)}>
+    <TouchableOpacity>
       <View style={styles.itemContainer}>
         <Text style={styles.supermarketName}>סופרמרקט: {item.supermarket}</Text>
         <Text style={styles.itemName}>מוצר: {item.itemName}</Text>

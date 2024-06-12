@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
-import firebase, { auth, firestore, getUserDocument, storage } from './../firebase';
+import firebase, { auth, getUserDocument, uploadProfileImage, updateUserProfileImage } from './../firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -33,71 +33,47 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const handleChooseImage = async () => {
+  const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Permission to access media library is required!');
+      alert('Sorry, we need camera roll permissions to make this work!');
       return;
     }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
     });
 
-    if (!result.canceled) {
-      await saveImageToStorage(result.uri);
-    }
-  };
+    console.log('Image picker result:', result); // Added logging
 
-  const saveImageToStorage = async (uri) => {
-    try {
-      console.log('Starting image upload process...');
-  
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const uri = result.assets[0].uri;
+      console.log('Selected image URI:', uri); // Debugging line
       const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('User not authenticated');
+      if (currentUser) {
+        try {
+          const imageUrl = await uploadProfileImage(uri, currentUser.uid);
+          await updateUserProfileImage(currentUser.uid, imageUrl);
+          const updatedUserDocument = await getUserDocument(currentUser.uid);
+          setUserData(updatedUserDocument);
+        } catch (error) {
+          console.error('Error updating profile image:', error);
+          Alert.alert('Error', 'Failed to update profile image.');
+        }
       }
-  
-      const response = await fetch(uri);
-      if (!response.ok) {
-        throw new Error('Failed to fetch the image from the given URI.');
-      }
-      const blob = await response.blob();
-      console.log('Blob created from image URI:', blob);
-  
-      const imageRef = storage.ref().child(`profile_photos/${currentUser.uid}`);
-      await imageRef.put(blob);
-      console.log('Image uploaded to Firebase Storage.');
-  
-      const downloadURL = await imageRef.getDownloadURL();
-      console.log('Download URL obtained:', downloadURL);
-  
-      await currentUser.updateProfile({ photoURL: downloadURL });
-      console.log('User profile updated with new photo URL.');
-  
-      await firestore.collection('users').doc(currentUser.uid).update({ photoURL: downloadURL });
-      console.log('photoURL updated in Firestore.');
-  
-      setUserData({ ...userData, photoURL: downloadURL });
-    } catch (error) {
-      console.error('Error saving image to storage:', error);
-      Alert.alert('Error', 'Failed to upload the image. Please try again.');
     }
   };
-  
 
   return (
     <View style={styles.container}>
-      {/* Render loading indicator if data is still loading */}
       {isLoading ? (
         <ActivityIndicator size="large" color="#e9a1a1" />
       ) : (
         <>
-          <TouchableOpacity onPress={handleChooseImage}>
-            {/* Render profile image or placeholder */}
+          <TouchableOpacity onPress={pickImage}>
             <View style={styles.imageContainer}>
               {userData && userData.photoURL ? (
                 <Image source={{ uri: userData.photoURL }} style={styles.profileImage} />
@@ -106,8 +82,6 @@ const ProfileScreen = ({ navigation }) => {
               )}
             </View>
           </TouchableOpacity>
-
-
 
           {userData && (
             <View style={styles.header}>
@@ -170,24 +144,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
-    // marginBottom: 20,
-    marginLeft: 120
+    marginLeft: 120,
   },
   profileImage: {
     width: 120,
     height: 120,
     borderRadius: 70,
   },
-  uploadText: {
-    color: '#e9a1a1',
-    marginBottom: 10,
-    fontSize:10
-  },
   username: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 5,
-    marginTop:20
+    marginTop: 20,
   },
   email: {
     fontSize: 14,
@@ -197,7 +165,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
     paddingTop: 20,
-    alignItems:'flex-end',
+    alignItems: 'flex-end',
     marginBottom: 10,
   },
   optionItem: {
@@ -205,36 +173,18 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
   },
   optionText: {
-    fontSize: 15, // Increased text size
+    fontSize: 15,
     fontWeight: 'bold',
     marginLeft: 220,
-    alignItems:'flex-end',
-    textAlign:'right',
-
+    textAlign: 'right',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginRight: 10,
-  },
-
   buttonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    
   },
   buttonIcon: {
-    marginlift:80, 
+    marginLift: 80,
     paddingHorizontal: 10,
     color: '#e9a1a1',
-  },  
+  },
 });
