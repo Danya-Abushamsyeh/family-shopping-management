@@ -120,11 +120,11 @@ const ListItemsScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <CustomPrompt
+      {/* <CustomPrompt
         visible={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onSubmit={handlePromptSubmit}
-      />
+      /> */}
 
       <View style={styles.logoContainer}>
         <View style={styles.navigation}>
@@ -150,15 +150,15 @@ const ListItemsScreen = ({ route }) => {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.createListButton} onPress={() => setIsModalVisible(true)}>
+      {/* <TouchableOpacity style={styles.createListButton} onPress={() => setIsModalVisible(true)}>
         <FontAwesome name='plus' size={22} color="white" />
         <Text style={styles.createListButtonText}>ליצור רשימה חדשה</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
-      <TouchableOpacity onPress={() => navigation.navigate('ShoppingList', { supermarketName, listName:selectedListName })} style={styles.backButton}>
+      {/* <TouchableOpacity onPress={() => navigation.navigate('ShoppingList', { supermarketName, listName:selectedListName })} style={styles.backButton}>
             <Text style={styles.backText}>חזור לרשימה שלי </Text>
             <FontAwesome name="arrow-right" style={styles.backIcon} />
-      </TouchableOpacity>    
+      </TouchableOpacity>     */}
 
       <Text style={styles.supermarketName}>רשימת המוצרים</Text>
       <Text></Text>

@@ -1,4 +1,3 @@
-// firebase.js
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
@@ -6,14 +5,14 @@ import 'firebase/compat/database';
 import 'firebase/compat/storage'; 
 import axios from 'axios';
 
-// Google API keys and Custom Search Engine ID
 const apiKeys = [
+  'AIzaSyAwtcAodl_4QdvERIqBVW4kZlNkYmCU64s',
+  'AIzaSyCeKZ48A1S8gPx9vFNQj88NtddMPJwhgOw',
+  'AIzaSyBm7EpqydsmGjWD_o438DeDVcS7PivzOLA',
   'AIzaSyBfmtB30gcGtn9cz4CaMSX4zkDUbfyngcc',
-  'AIzaSyAwtcAodl_4QdvERIqBVW4kZlNkYmCU64s'
+  'AIzaSyARYW0U9DMOkW2fVl8r6-3H8AzlPRa5cCE'
 ];
-
 const cx = '84597da9d23754ba9';
-
 
 let currentApiKeyIndex = 0;
 
@@ -27,7 +26,6 @@ const firebaseConfig = {
   measurementId: "G-H1ZH8VSTLF"
 };
 
-// Initialize Firebase
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
@@ -38,12 +36,12 @@ export const database = firebase.database();
 export const storage = firebase.storage(); 
 export const fieldValue = firebase.firestore.FieldValue;
 
-// const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// const getNextApiKey = () => {
-//   currentApiKeyIndex = (currentApiKeyIndex + 1) % apiKeys.length;
-//   return apiKeys[currentApiKeyIndex];
-// };
+const getNextApiKey = () => {
+  currentApiKeyIndex = (currentApiKeyIndex + 1) % apiKeys.length;
+  return apiKeys[currentApiKeyIndex];
+};
 
 // export const fetchImageUrl = async (query) => {
 //   const url = `https://www.googleapis.com/customsearch/v1?q=${query}&cx=${cx}&key=${getNextApiKey()}&searchType=image&num=1`;
@@ -51,7 +49,11 @@ export const fieldValue = firebase.firestore.FieldValue;
 //     const response = await axios.get(url);
 //     const data = response.data;
 //     if (data.items && data.items.length > 0) {
-//       return data.items[0].link;
+//       const imageUrl = data.items[0].link;
+//       const isValidFormat = /\.(jpg|jpeg|png)$/.test(imageUrl.toLowerCase());
+//       if (isValidFormat) {
+//         return imageUrl;
+//       }
 //     }
 //   } catch (error) {
 //     console.error('Error fetching image URL:', error);
@@ -63,8 +65,8 @@ export const fieldValue = firebase.firestore.FieldValue;
 // };
 
 // export const updateProductImages = async () => {
-//   const supermarketNames = ['shupersalItems', 'tivtaamItems', 'vectoryItems'];
-//   const batchSize = 10; // Process 10 items per batch
+//   const supermarketNames = ['tivtaamItems', 'vectoryItems'];
+//   const batchSize = 5; // Process 5 items per batch to reduce the load
 //   const maxRetry = 5; // Maximum number of retries
 
 //   for (const supermarket of supermarketNames) {
@@ -101,7 +103,7 @@ export const fieldValue = firebase.firestore.FieldValue;
 //             }
 //           }
 
-//           await sleep(200); // Add a delay between each request to avoid hitting the rate limit
+//           await sleep(500); // delay between each request to avoid hitting the rate limit
 //         }
 //       }
 //     }
@@ -221,6 +223,3 @@ export const updateUserProfileImage = async (userId, imageUrl) => {
 };
 
 export default firebase;
-
-
-
