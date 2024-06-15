@@ -10,7 +10,6 @@ import TabNavigation from './Navigations/TabNavigation';
 import ProfileScreen from './screens/ProfileScreen';
 import EditProfile from './screens/EditProfile';
 import Signup from './screens/Signup';
-import ItemsScreen from './screens/ItemsScreen';
 import ShoppingList from './screens/ShoppingList'; 
 
 const Stack = createNativeStackNavigator();

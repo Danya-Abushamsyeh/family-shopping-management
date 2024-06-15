@@ -3,6 +3,7 @@ import {Image, View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Al
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import firebase, { firestore, auth, fieldValue } from './../firebase';
+import { Picker } from '@react-native-picker/picker';
 
 const ShoppingList = () => {
   const navigation = useNavigation();
@@ -13,6 +14,8 @@ const ShoppingList = () => {
   const [loading, setLoading] = useState(true);
   const [shareEmail, setShareEmail] = useState('');
   const [isSharedList, setIsSharedList] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [selectedFamilyMember, setSelectedFamilyMember] = useState('');
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -45,11 +48,11 @@ const ShoppingList = () => {
                 setListNameState(fetchedListName || listName);
                 setIsSharedList(true);
               } else {
-                Alert.alert('Error', 'You do not have access to this list.');
+                Alert.alert('שגיאה', 'אין לך גישה לרשימה זו.');
                 navigation.goBack();
               }
             } else {
-              Alert.alert('Error', 'Document does not exist!');
+              Alert.alert('שגיאה', 'המסמך לא קיים!');
               navigation.goBack();
             }
           }
@@ -65,6 +68,24 @@ const ShoppingList = () => {
 
     fetchItems();
   }, [route.params]);
+
+  useEffect(() => {
+    const fetchFamilyMembers = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userRef = firestore.collection('users').doc(currentUser.uid);
+        const userData = (await userRef.get()).data();
+        const family = userData.family || [];
+        const familyMemberPromises = family.map(async memberId => {
+          const memberData = (await firestore.collection('users').doc(memberId).get()).data();
+          return { id: memberId, email: memberData.email };
+        });
+        const familyMembersData = await Promise.all(familyMemberPromises);
+        setFamilyMembers(familyMembersData);
+      }
+    };
+    fetchFamilyMembers();
+  }, []);
 
   const updateList = async (updatedList) => {
     try {
@@ -101,62 +122,47 @@ const ShoppingList = () => {
         await listRef.update({ items: updatedList });
       }
     } catch (error) {
-      console.error('Error updating list:', error);
-      Alert.alert('Error', 'Failed to update list. Please try again later.');
+      console.error('שגיאה בעדכון הרשימה:', error);
+      Alert.alert('שגיאה', 'עדכון הרשימה נכשל. בבקשה נסה שוב מאוחר יותר.');
     }
   };
   
-  const shareList = async () => {
-    if (!shareEmail) {
-      Alert.alert('Error', 'Please enter an email to share the list with.');
+   const shareList = async () => {
+    if (!selectedFamilyMember) {
+      Alert.alert('שגיאה', 'אנא בחר בן משפחה לשתף איתו את הרשימה.');
       return;
     }
 
     try {
-      const userSnapshot = await firestore.collection('users').where('email', '==', shareEmail).get();
-      if (!userSnapshot.empty) {
-        const shareUserId = userSnapshot.docs[0].id;
-        const currentUser = auth.currentUser.uid;
-        const sharedListRef = firestore.collection('sharedLists').doc(listName);
-
-        // Check if the document exists
-        const doc = await sharedListRef.get();
-        if (doc.exists) {
-          // If it exists, update the document
-          await sharedListRef.update({
-            sharedWith: fieldValue.arrayUnion(shareUserId),
-            items: shoppingList, // Ensure items are included in the update
-            sharedBy: currentUser // Include the user who shared the list
-          });
-        } else {
-          // If it does not exist, create the document
-          await sharedListRef.set({
-            sharedWith: [shareUserId],
-            items: shoppingList,
-            listName: listNameState,
-            supermarketName, // Ensure supermarketName is included in the creation
-            sharedBy: currentUser // Include the user who shared the list
-          });
-        }
-
-        // Add reference to the shared list in the shared user's document
-        await firestore.collection('users').doc(shareUserId).update({
-          receivedLists: fieldValue.arrayUnion({ listName, supermarketName })
+      const currentUser = auth.currentUser.uid;
+      const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
+      const doc = await sharedListRef.get();
+      if (doc.exists) {
+        await sharedListRef.update({
+          sharedWith: fieldValue.arrayUnion(selectedFamilyMember),
+          items: shoppingList,
+          sharedBy: currentUser
         });
-
-        // Add reference to the shared list in the current user's document
-        await firestore.collection('users').doc(currentUser).update({
-          sharedLists: fieldValue.arrayUnion({ listName, supermarketName })
-        });
-
-        Alert.alert('Success', 'List shared successfully.');
-        setShareEmail('');
       } else {
-        Alert.alert('Error', 'User not found.');
+        await sharedListRef.set({
+          sharedWith: [selectedFamilyMember],
+          items: shoppingList,
+          listName: listNameState,
+          supermarketName,
+          sharedBy: currentUser
+        });
       }
+      await firestore.collection('users').doc(selectedFamilyMember).update({
+        receivedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName })
+      });
+      await firestore.collection('users').doc(currentUser).update({
+        sharedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName })
+      });
+      Alert.alert('בוצע', 'הרשימה שותפה בהצלחה.');
+      setShareEmail('');
     } catch (error) {
-      console.error('Error sharing list:', error);
-      Alert.alert('Error', 'Failed to share list. Please try again later.');
+      console.error('שגיאה בשיתוף רשימת:', error);
+      Alert.alert('שגיאה', 'נכשל בשיתוף הרשימה. בבקשה נסה שוב מאוחר יותר.');
     }
   };
 
@@ -196,7 +202,7 @@ const ShoppingList = () => {
       await updateList(updatedList);
       Alert.alert('בוצע', 'פריט נמחק בהצלחה.');
     } catch (error) {
-      console.error('Error deleting item:', error);
+      console.error('שגיאה במחיקת פריט:', error);
       Alert.alert('שגיאה', 'מחיקת הפריט נכשלה. בבקשה נסה שוב מאוחר יותר.');
     }
   };
@@ -226,7 +232,7 @@ const ShoppingList = () => {
       await updateList([]);
       Alert.alert('בוצע', 'כל הפריטים נוקו בהצלחה.');
     } catch (error) {
-      console.error('Error clearing items:', error);
+      console.error('שגיאה בניקוי פריטים:', error);
       Alert.alert('שגיאה', 'נכשל בניקוי הפריטים. בבקשה נסה שוב מאוחר יותר.');
     }
   };
@@ -236,7 +242,7 @@ const ShoppingList = () => {
       await updateList(shoppingList);
       Alert.alert('בוצע', 'רשימת הקניות עודכנה בהצלחה.');
     } catch (error) {
-      console.error('Error saving shopping list:', error);
+      console.error('שגיאה בשמירת רשימת הקניות:', error);
       Alert.alert('שגיאה', 'עדכון רשימת הקניות נכשל. בבקשה נסה שוב מאוחר יותר.');
     }
   };
@@ -262,16 +268,22 @@ const ShoppingList = () => {
           </View>
 
           <View style={styles.shareContainer}>
-            <TextInput
-              style={styles.shareInput}
-              placeholder="הזן אימייל לשיתוף"
-              value={shareEmail}
-              onChangeText={setShareEmail}
-            />
-            <TouchableOpacity style={styles.button} onPress={shareList}>
-              <FontAwesome name="share" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>שתף את הרשימה</Text>
-            </TouchableOpacity>
+            <Picker
+              selectedValue={selectedFamilyMember}
+              style={styles.picker}
+              onValueChange={(itemValue) => setSelectedFamilyMember(itemValue)}
+            >
+              <Picker.Item label="בחר בן משפחה לשתף איתו את הרשימה" value="" />
+              {familyMembers.map((member) => (
+                <Picker.Item key={member.id} label={member.email} value={member.id} />
+              ))}
+            </Picker>
+            {selectedFamilyMember ? (
+              <TouchableOpacity style={styles.button} onPress={shareList}>
+                <FontAwesome name="share" style={styles.shareBtn} />
+                <Text style={styles.buttonText}>שתף את הרשימה</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
 
           <View style={styles.buttonsContainer}>
@@ -284,14 +296,14 @@ const ShoppingList = () => {
               <FontAwesome name="balance-scale" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>השווה סופרמרקטים</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
+            {/* <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
               <FontAwesome name="save" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>שמור שינויים</Text>
-            </TouchableOpacity>
-            {/* <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AddFamilyMember')}>
+            </TouchableOpacity> */}
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AddFamilyMember')}>
               <FontAwesome name="users" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>הוסף בן משפחה</Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
           </View>
         </>
       )}
@@ -391,7 +403,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 13,
     color: '#fff',
-    fontWeight:'500'
+    fontWeight:'500',
   },
   backButton: {
     flexDirection: 'row',
@@ -422,26 +434,32 @@ const styles = StyleSheet.create({
     marginTop:4
   },
   shareContainer: {
-    flexDirection: 'row',
+    // flexDirection: 'row',
     // alignItems: 'center',
     // marginTop: 20,
     padding:5,
     // paddingHorizontal:20
-    justifyContent: 'space-around',
+    // justifyContent: 'space-around',
     // marginVertical: 20,
     // right:12,
     
   },
-  shareInput: {
-    borderColor: '#ccc',
-    borderWidth: 1,
-    padding: 3,
-    borderRadius: 5,
-    // height:28,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal:57
+  shareBtn:{
+    fontSize: 18,
+    color: '#fff',
+    marginRight: 5,
+    fontWeight:'bold',
+    paddingHorizontal:110,
+    right:100,
   },
+  picker: {
+    width: '100%',
+    color:"#e9a1a1",
+    backgroundColor:'#fff',
+    borderRadius: 5,
+    alignItems: 'center',
+    padding: 5,
+   },
 });
 
 export default ShoppingList;

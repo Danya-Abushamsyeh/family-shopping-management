@@ -4,7 +4,6 @@ import { FontAwesome } from '@expo/vector-icons';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import ItemsScreen from '../screens/ItemsScreen';
 import EditProfileScreen from '../screens/EditProfile';
 import ShoppingList from '../screens/ShoppingList';
 import signup from '../screens/Signup';
@@ -48,8 +47,6 @@ const TabNavigation = () => {
       
       <Tab.Screen name='EditProfile' component={EditProfileScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300} }}/>
       <Tab.Screen name='signup' component={signup} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
-      <Tab.Screen name='Items' component={ItemsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
-      {/* <Tab.Screen name='Lists' component={ListsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/> */}
       <Tab.Screen name='ShoppingList' component={ShoppingList} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:300 },tabBarIconStyle:{marginLeft:300 },tabBarItemStyle:{left:300}}}/>
       <Tab.Screen name='SupermarketLists' component={SupermarketListsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>
       <Tab.Screen name='ListItems' component={ListItemsScreen} options={{ headerShown: false,tabBarLabelStyle:{marginLeft:500 },tabBarIconStyle:{marginLeft:500 },tabBarItemStyle:{left:500}}}/>

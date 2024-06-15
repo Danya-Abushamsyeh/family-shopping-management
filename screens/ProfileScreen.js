@@ -105,10 +105,17 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.optionItem} onPress={() => navigation.navigate('Help')}>
+            <TouchableOpacity style={styles.optionItem} onPress={() => navigation.navigate('Items')}>
               <View style={styles.buttonContainer}>
                 <Text style={styles.optionText}>עזרה</Text>
                 <FontAwesome name="question" size={20} style={styles.buttonIcon} />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.optionItem} onPress={() => navigation.navigate('AddFamilyMember')}>
+              <View style={styles.buttonContainer}>
+              <Text style={styles.optionText}>הוסף בן משפחה</Text>
+              <FontAwesome name="users" style={styles.buttonIcon} />
               </View>
             </TouchableOpacity>
 
