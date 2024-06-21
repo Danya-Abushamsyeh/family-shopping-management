@@ -38,7 +38,7 @@ const ComparePricesScreen = () => {
   };
 
   const renderComparisonItem = ({ item }) => (
-    <TouchableOpacity>
+    <TouchableOpacity style={styles.listItem} >
       <View style={styles.itemContainer}>
         <Text style={styles.supermarketName}>סופרמרקט: {item.supermarket}</Text>
         <Text style={styles.itemName}>מוצר: {item.itemName}</Text>
@@ -50,14 +50,14 @@ const ComparePricesScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        <View style={styles.navigation}>
-          <TouchableOpacity style={styles.navItem} onPress={() => alert('בחר את הסופרמרקט אליו תלך או הקלד בחיפוש את שם המוצר שברצונך להוסיף לרשימה שלך')}>
-          </TouchableOpacity>
-        </View>
-        <Image source={require('./../assets/images/Image.jpg')} style={styles.logo} />
       </View>
-    
-      <Text style={styles.title}>השוואת מחירים עבור {itemName} {itemCode}</Text>
+      <View style={styles.rowww}>
+        {/* <TouchableOpacity onPress={() => navigation.navigate('ShoppingList', { supermarketName, listName })} style={styles.backButton}>
+         <FontAwesome name="arrow-left" style={styles.backIcon} />
+        </TouchableOpacity> */}
+        <Text style={styles.title}>השוואת מחירים עבור {itemName} {itemCode}</Text>
+        </View>
+
       {loading ? (
         <ActivityIndicator size="large" color="#e9a1a1" />
       ) : (
@@ -84,15 +84,28 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     marginRight: 20,
-    marginTop: 39,
+    marginTop: 10,
   },
   logoContainer: {
-    height: 90,
+    height: 50,
     paddingVertical: 5,
     backgroundColor: '#e9a1a1',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  rowww:{
+    backgroundColor: '#e9a1a1',
+  },
+  listItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+    marginTop:20
   },
   navigation: {
     flexDirection: 'row',
@@ -106,6 +119,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color:'#fff',
   },
   itemContainer: {
     backgroundColor: '#fff',

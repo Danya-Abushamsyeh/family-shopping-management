@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {Image, View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { Image, View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import firebase, { firestore, auth, fieldValue } from './../firebase';
-import { Picker } from '@react-native-picker/picker';
+import RNPickerSelect from 'react-native-picker-select';
 
 const ShoppingList = () => {
   const navigation = useNavigation();
@@ -42,7 +42,6 @@ const ShoppingList = () => {
             const sharedDoc = await sharedListRef.get();
             if (sharedDoc.exists) {
               const { items, listName: fetchedListName, sharedWith } = sharedDoc.data();
-              const userId = auth.currentUser.uid;
               if (sharedWith.includes(userId)) {
                 setShoppingList(items || []);
                 setListNameState(fetchedListName || listName);
@@ -90,31 +89,35 @@ const ShoppingList = () => {
   const updateList = async (updatedList) => {
     try {
       const userId = auth.currentUser.uid;
-      const userRef = firestore.doc(`users/${userId}`);
-  
+      let listRef;
+
       if (isSharedList) {
         // Update the shared list
-        const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
-        await sharedListRef.update({ items: updatedList });
-  
-        // Update the receivedLists reference for collaborators
-        const sharedDoc = await sharedListRef.get();
+        listRef = firestore.collection('sharedLists').doc(listNameState);
+        await listRef.update({ items: updatedList });
+
+        // Propagate updates to collaborators' received lists
+        const sharedDoc = await listRef.get();
         const sharedData = sharedDoc.data();
         for (const sharedUserId of sharedData.sharedWith) {
-          const sharedUserRef = firestore.collection('users').doc(sharedUserId);
-          const sharedUserDoc = await sharedUserRef.get();
-          const sharedUserData = sharedUserDoc.data();
-          const updatedReceivedLists = sharedUserData.receivedLists.map((list) => {
-            if (list.listName === listNameState && list.supermarketName === supermarketName) {
-              return { ...list, items: updatedList };
-            }
-            return list;
-          });
-          await sharedUserRef.update({ receivedLists: updatedReceivedLists });
+          if (sharedUserId !== userId) {
+            const sharedUserRef = firestore.collection('users').doc(sharedUserId);
+            const sharedUserDoc = await sharedUserRef.get();
+            const sharedUserData = sharedUserDoc.data();
+            const updatedReceivedLists = sharedUserData.receivedLists.map((list) => {
+              if (list.listName === listNameState && list.supermarketName === supermarketName) {
+                return { ...list, items: updatedList };
+              }
+              return list;
+            });
+            await sharedUserRef.update({ receivedLists: updatedReceivedLists });
+          }
         }
       } else {
         // Update the user's personal list
-        const listRef = userRef
+        listRef = firestore
+          .collection('users')
+          .doc(userId)
           .collection('shoppingLists')
           .doc(supermarketName)
           .collection('lists')
@@ -126,8 +129,46 @@ const ShoppingList = () => {
       Alert.alert('שגיאה', 'עדכון הרשימה נכשל. בבקשה נסה שוב מאוחר יותר.');
     }
   };
-  
-   const shareList = async () => {
+
+  const deleteList = async () => {
+    try {
+      const userId = auth.currentUser.uid;
+      let listRef;
+
+      if (isSharedList) {
+        listRef = firestore.collection('sharedLists').doc(listNameState);
+        await listRef.delete();
+
+        // Propagate deletion to collaborators' received lists
+        const sharedDoc = await listRef.get();
+        const sharedData = sharedDoc.data();
+        for (const sharedUserId of sharedData.sharedWith) {
+          if (sharedUserId !== userId) {
+            const sharedUserRef = firestore.collection('users').doc(sharedUserId);
+            await sharedUserRef.update({
+              receivedLists: fieldValue.arrayRemove({ listName: listNameState, supermarketName })
+            });
+          }
+        }
+      } else {
+        listRef = firestore
+          .collection('users')
+          .doc(userId)
+          .collection('shoppingLists')
+          .doc(supermarketName)
+          .collection('lists')
+          .doc(listNameState);
+        await listRef.delete();
+      }
+      Alert.alert('בוצע', 'הרשימה נמחקה בהצלחה.');
+      navigation.goBack();
+    } catch (error) {
+      console.error('שגיאה במחיקת הרשימה:', error);
+      Alert.alert('שגיאה', 'מחיקת הרשימה נכשלה. בבקשה נסה שוב מאוחר יותר.');
+    }
+  };
+
+  const shareList = async () => {
     if (!selectedFamilyMember) {
       Alert.alert('שגיאה', 'אנא בחר בן משפחה לשתף איתו את הרשימה.');
       return;
@@ -170,28 +211,30 @@ const ShoppingList = () => {
 
   const renderItem = ({ item, index }) => (
     <View style={styles.item}>
-      <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
-      <Text style={styles.itemName}>{item.ItemName}</Text>
-      <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
-      <Text style={styles.ItemCode}>מחיר: {item.ItemPrice}</Text>
-      <Text style={styles.itemPrice}> {item.UnitOfMeasurePrice} ₪ ל {item.UnitOfMeasure}</Text>
-      <View style={styles.quantityContainer}>
-        <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) + 1)}>
-          <FontAwesome name='plus' style={styles.quantityIcon} />
-        </TouchableOpacity>
-        <TextInput
-          style={styles.quantityInput}
-          keyboardType="numeric"
-          onChangeText={(text) => updateQuantity(index, text)}
-          value={item.quantity ? item.quantity.toString() : ''}
-        />
-        <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) - 1)}>
-          <FontAwesome name='minus' style={styles.quantityIcon} />
+      <View>
+        <Text style={styles.itemName}>{item.ItemName}</Text>
+        <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
+        <Text style={styles.ItemCode}>מחיר: {item.ItemPrice}</Text>
+        <Text style={styles.itemPrice}>{item.UnitOfMeasurePrice} ₪ ל {item.UnitOfMeasure}</Text>
+        <View style={styles.quantityContainer}>
+          <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) + 1)}>
+            <FontAwesome name='plus' style={styles.quantityIcon} />
+          </TouchableOpacity>
+          <TextInput
+            style={styles.quantityInput}
+            keyboardType="numeric"
+            onChangeText={(text) => updateQuantity(index, text)}
+            value={item.quantity ? item.quantity.toString() : ''}
+          />
+          <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) - 1)}>
+            <FontAwesome name='minus' style={styles.quantityIcon} />
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity onPress={() => deleteItem(item)} style={styles.deleteButton}>
+          <FontAwesome name='trash' style={styles.deleteIcon} />
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={() => deleteItem(item)} style={styles.deleteButton}>
-        <FontAwesome name='trash' style={styles.deleteIcon} />
-      </TouchableOpacity>
+      <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
     </View>
   );
 
@@ -253,44 +296,49 @@ const ShoppingList = () => {
         <ActivityIndicator size="large" color="#e9a1a1" />
       ) : (
         <>
-          <Text style={styles.title}>{listNameState}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('ListItems', { supermarketName, listName: listNameState })} style={styles.backButton}>
+              <FontAwesome name="arrow-left" style={styles.backIcon} />
+              <Text style={styles.backText} >חזור לרשימת המוצרים</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>{listNameState}</Text>
           <FlatList
             data={shoppingList}
             renderItem={renderItem}
             keyExtractor={(item, index) => `${item.id}-${index}`}
           />
-          <TouchableOpacity onPress={() => navigation.navigate('ListItems', { supermarketName, listName:listNameState })} style={styles.backButton}>
-            <FontAwesome name="arrow-left" style={styles.backIcon} />
-            <Text style={styles.backText}>חזור לרשימת המוצרים</Text>
-          </TouchableOpacity>
           <View style={styles.totalContainer}>
             <Text style={styles.totalText}>סה"כ: {totalPrice.toFixed(2)} ₪</Text>
           </View>
 
           <View style={styles.shareContainer}>
-            <Picker
-              selectedValue={selectedFamilyMember}
-              style={styles.picker}
-              onValueChange={(itemValue) => setSelectedFamilyMember(itemValue)}
-            >
-              <Picker.Item label="בחר בן משפחה לשתף איתו את הרשימה" value="" />
-              {familyMembers.map((member) => (
-                <Picker.Item key={member.id} label={member.email} value={member.id} />
-              ))}
-            </Picker>
-            {selectedFamilyMember ? (
-              <TouchableOpacity style={styles.button} onPress={shareList}>
-                <FontAwesome name="share" style={styles.shareBtn} />
-                <Text style={styles.buttonText}>שתף את הרשימה</Text>
-              </TouchableOpacity>
-            ) : null}
+            <RNPickerSelect
+              onValueChange={(value) => setSelectedFamilyMember(value)}
+              items={familyMembers.map(member => ({
+                label: member.email,
+                value: member.id,
+                key: member.id
+              }))}
+              placeholder={{ label: "בחר בן משפחה לשתף איתו את הרשימה", value: null }}
+              style={pickerSelectStyles}
+            />
           </View>
+          {selectedFamilyMember ? (
+            <TouchableOpacity style={styles.button} onPress={shareList}>
+              <FontAwesome name="share" style={styles.shareBtn} />
+              <Text style={styles.buttonText}>שתף את הרשימה</Text>
+            </TouchableOpacity>
+          ) : null}
 
           <View style={styles.buttonsContainer}>
             <TouchableOpacity onPress={clearAllItems} style={styles.button}>
               <FontAwesome name="trash" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>מחק את הכל</Text>
             </TouchableOpacity>
+
+            {/* <TouchableOpacity onPress={deleteList} style={styles.button}>
+              <FontAwesome name="trash-o" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>מחק את הרשימה</Text>
+            </TouchableOpacity> */}
 
             <TouchableOpacity onPress={() => navigation.navigate('CompareSupermarkets', { shoppingList, supermarketName, listName })} style={styles.button}>
               <FontAwesome name="balance-scale" style={styles.buttonIcon} />
@@ -299,7 +347,7 @@ const ShoppingList = () => {
             {/* <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
               <FontAwesome name="save" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>שמור שינויים</Text>
-            </TouchableOpacity> */}
+              </TouchableOpacity> */}
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AddFamilyMember')}>
               <FontAwesome name="users" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>הוסף בן משפחה</Text>
@@ -312,6 +360,36 @@ const ShoppingList = () => {
 };
 
 
+
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#e9a1a1',
+    borderRadius: 4,
+    color: '#e9a1a1',
+    paddingRight: 30,
+    backgroundColor: '#fff',
+    textAlign: 'center'
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e9a1a1',
+    borderRadius: 4,
+    color: '#e9a1a1',
+    paddingRight: 30,
+    backgroundColor: '#fff',
+    textAlign: 'center'
+
+  },
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -321,36 +399,45 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 20,
-    marginTop:50,
+    marginBottom: 30,
+    marginTop: 16,
+  },
+  roww: {
+    // flexDirection: 'row',
+    // paddingHorizontal: 120,
+    // marginHorizontal:50
   },
   item: {
+    flexDirection: 'row',
     padding: 15,
     backgroundColor: '#f9f9f9',
     borderRadius: 5,
     marginBottom: 10,
   },
   itemImage: {
-    width:50,
     height: 90,
-    paddingRight:80,
-    marginLeft:220
+    paddingRight: 75,
+    left: 85
   },
   itemName: {
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign:'right'
+    textAlign: 'right',
+    left: 70
   },
   ItemCode: {
     fontSize: 14,
     color: '#555',
-    textAlign:'right'
+    textAlign: 'right',
+    left: 70
+
   },
   itemPrice: {
     fontSize: 14,
     color: '#555',
-    textAlign:'right',
-    left:5
+    textAlign: 'right',
+    left: 70
+
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -373,7 +460,7 @@ const styles = StyleSheet.create({
   deleteButton: {
     position: 'absolute',
     left: 10,
-    top:20
+    top: 20
   },
   deleteIcon: {
     fontSize: 20,
@@ -381,85 +468,72 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    // marginVertical: 20,
-    // right:12,
+    justifyContent: 'space-between',
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 5,
     backgroundColor: '#e9a1a1',
-    borderRadius: 5,
-    paddingHorizontal:4,
-
+    borderRadius: 10,
+    marginBottom: 4
   },
   buttonIcon: {
-    fontSize: 18,
+    fontSize: 15,
     color: '#fff',
     marginRight: 5,
-    fontWeight:'bold'
   },
   buttonText: {
     fontSize: 13,
     color: '#fff',
-    fontWeight:'500',
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    // padding: 5,
-    // marginTop: 10,
+    left:120,
+    marginTop:50
   },
   backIcon: {
     fontSize: 20,
     color: '#e9a1a1',
-    marginRight: 10,
+    right: 120
   },
   backText: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#e9a1a1',
+    right: 115,
+    textAlign:'right',
   },
   totalContainer: {
     alignItems: 'center',
-    marginVertical: 20,
-    backgroundColor:'white',
-    width:'100%',
-    height:40
+    marginVertical: 5,
+    backgroundColor: 'white',
+    width: '100%',
+    height: 40
   },
   totalText: {
     fontSize: 22,
     fontWeight: 'bold',
-    alignItems:'center',
-    marginTop:4
+    alignItems: 'center',
+    marginTop: 4
   },
   shareContainer: {
-    // flexDirection: 'row',
-    // alignItems: 'center',
-    // marginTop: 20,
-    padding:5,
-    // paddingHorizontal:20
-    // justifyContent: 'space-around',
-    // marginVertical: 20,
-    // right:12,
-    
+    color: '#e9a1a1',
+    // backgroundColor:'#e9a1a1',
+    padding: 5,
+    marginBottom: 5
   },
-  shareBtn:{
+  shareBtn: {
     fontSize: 18,
     color: '#fff',
     marginRight: 5,
-    fontWeight:'bold',
-    paddingHorizontal:110,
-    right:100,
+    fontWeight: 'bold',
+    paddingHorizontal: 110,
+    right: 100,
+    paddingBottom: 5
   },
-  picker: {
-    width: '100%',
-    color:"#e9a1a1",
-    backgroundColor:'#fff',
-    borderRadius: 5,
-    alignItems: 'center',
-    padding: 5,
-   },
+
 });
 
 export default ShoppingList;

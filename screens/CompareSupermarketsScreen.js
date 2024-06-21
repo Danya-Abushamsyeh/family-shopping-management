@@ -77,8 +77,8 @@ const CompareSupermarketsScreen = () => {
          <FontAwesome name="arrow-left" style={styles.backIcon} />
         {/* <Text style={styles.backText}>חזור לרשימה שלי</Text> */}
         </TouchableOpacity>
-        <Text style={styles.title}>השוואת מחירים עבור רשימת הקניות שלך</Text>
-      </View>
+        <Text style={styles.title}>השוואת מחירים עבור רשימת הקניות </Text>
+        </View>
       {loading ? (
         <ActivityIndicator size="large" color="#e9a1a1" />
       ) : (
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   rowww:{
-    flexDirection: 'row',
+    // flexDirection: 'row',
     backgroundColor: '#e9a1a1',
 
   },
@@ -124,11 +124,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    // marginBottom: 20,
     textAlign: 'center',
     backgroundColor: '#e9a1a1',
     color:'#fff',
-    padding:20
+    padding:15
   },
   itemContainer: {
     padding: 15,
@@ -161,16 +161,22 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    // marginBottom: 10,
+    backgroundColor:'#e9a1a1',
+
   },
   backIcon: {
     fontSize: 20,
     color: '#fff',
-    marginLeft: 10,
+    marginLeft: 20,
+    backgroundColor:'#e9a1a1',
+
   },
   backText: {
     fontSize: 16,
     color: '#e9a1a1',
+    backgroundColor:'#e9a1a1',
+
   },
 });
 

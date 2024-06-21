@@ -1,5 +1,5 @@
 // SupermarketListsScreen.js
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { auth, firestore } from './../firebase';
 import React, { useEffect, useState } from 'react';
@@ -64,10 +64,35 @@ const SupermarketListsScreen = () => {
     }
   };
 
+  const deleteList = async (listNameToDelete) => {
+    try {
+      const userId = auth.currentUser.uid;
+      const listRef = firestore
+        .collection('users')
+        .doc(userId)
+        .collection('shoppingLists')
+        .doc(supermarketName)
+        .collection('lists')
+        .doc(listNameToDelete);
+      await listRef.delete();
+      
+      Alert.alert('בוצע', 'הרשימה נמחקה בהצלחה.');
+      navigation.goBack();
+    } catch (error) {
+      console.error('שגיאה במחיקת הרשימה:', error);
+      Alert.alert('שגיאה', 'מחיקת הרשימה נכשלה. בבקשה נסה שוב מאוחר יותר.');
+    }
+  };
+
   const renderListItem = ({ item }) => (
-    <TouchableOpacity style={styles.listItem} onPress={() => handleListPress(item.id)}>
-      <Text style={styles.listName}>{item.listName}</Text>
-    </TouchableOpacity>
+    <View style={styles.listItemContainer}>
+      <TouchableOpacity onPress={() => deleteList(item.id)} style={styles.button}>
+        <FontAwesome name="trash-o" style={styles.buttonIcon} />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.listItem} onPress={() => handleListPress(item.id)}>
+        <Text style={styles.listName}>{item.listName}</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -113,48 +138,59 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  listItem: {
+  listItemContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 18,
     backgroundColor: '#e9a1a1',
     borderRadius: 5,
     marginBottom: 10,
   },
+  listItem: {
+    flex: 1,
+  },
   listName: {
     fontSize: 18,
+    textAlign: 'right',
+    fontWeight:'bold',
+    color:'#635A5A'
   },
-    createListButton: {
+  button: {
+    padding: 8,
+  },
+  buttonIcon: {
+    fontSize: 15,
+    color: '#fff',
+  },
+  createListButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 11,
     backgroundColor: '#e9a1a1',
     borderRadius: 5,
-    margin: 5
+    margin: 5,
   },
   createListButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: 'bold',
-    // marginLeft: 10,
-    // paddingHorizontal:110
-    paddingLeft:170
+    paddingLeft: 170,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    // padding: 5,
-    // marginTop: 10,
   },
   backIcon: {
     fontSize: 20,
     color: '#e9a1a1',
     marginRight: 12,
-    left:9
+    left: 9,
   },
   backText: {
     fontSize: 16,
     color: '#e9a1a1',
     fontWeight: 'bold',
-
   },
 });
 

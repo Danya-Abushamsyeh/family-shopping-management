@@ -29,7 +29,7 @@ const AddFamilyMember = () => {
 
   const addFamilyMember = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter an email.');
+      Alert.alert('שגיאה', 'אנא הכנס כתובת אימייל.');
       return;
     }
 
@@ -39,7 +39,7 @@ const AddFamilyMember = () => {
       try {
         const userSnapshot = await firestore.collection('users').where('email', '==', email).get();
         if (userSnapshot.empty) {
-          Alert.alert('Error', 'No user found with this email.');
+          Alert.alert('שגיאה', 'לא נמצא משתמש עם כתובת אימייל זו.');
           setLoading(false);
           return;
         }
@@ -66,13 +66,13 @@ const AddFamilyMember = () => {
           }
 
           setFamilyMembers([...familyMembers, { id: familyMemberId, email, displayName: familyMemberData.displayName }]);
-          Alert.alert('Success', `${familyMemberData.displayName} (${email}) has been added as a family member.`);
+          Alert.alert('הצלחה', `${familyMemberData.displayName} (${email}) נוסף כחבר משפחה.`);
         } else {
-          Alert.alert('Info', `${email} is already a family member.`);
+          Alert.alert('מידע', `${email} כבר נמצא כחבר משפחה.`);
         }
       } catch (error) {
-        console.error('Error adding family member:', error);
-        Alert.alert('Error', 'Failed to add family member. Please try again later.');
+        console.error('שגיאה בהוספת חבר משפחה:', error);
+        Alert.alert('שגיאה', 'נכשל בהוספת חבר משפחה. נסה שוב מאוחר יותר.');
       } finally {
         setLoading(false);
       }
@@ -97,10 +97,10 @@ const AddFamilyMember = () => {
         await familyMemberRef.update({ family: updatedMemberFamily });
 
         setFamilyMembers(familyMembers.filter(member => member.id !== memberId));
-        Alert.alert('Success', 'Family member removed successfully.');
+        Alert.alert('הצלחה', 'חבר משפחה הוסר בהצלחה.');
       } catch (error) {
-        console.error('Error removing family member:', error);
-        Alert.alert('Error', 'Failed to remove family member. Please try again later.');
+        console.error('שגיאה בהסרת חבר משפחה:', error);
+        Alert.alert('שגיאה', 'נכשל בהסרת חבר משפחה. נסה שוב מאוחר יותר.');
       } finally {
         setLoading(false);
       }
@@ -111,31 +111,31 @@ const AddFamilyMember = () => {
     <View style={styles.familyMemberContainer}>
       <Text>{item.displayName} ({item.email})</Text>
       <TouchableOpacity onPress={() => removeFamilyMember(item.id)} style={styles.removeButton}>
-        <Text style={styles.removeButtonText}>Remove</Text>
+        <Text style={styles.removeButtonText}>הסר</Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Enter family member's email:</Text>
+      <Text style={styles.label}>הכנס את כתובת האימייל של חבר המשפחה:</Text>
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder="אימייל"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
       <TouchableOpacity style={styles.button} onPress={addFamilyMember} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Add Family Member</Text>}
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>הוסף חבר משפחה</Text>}
       </TouchableOpacity>
-      <Text style={styles.label}>My Family Members</Text>
+      <Text style={styles.label}>חברי המשפחה שלי</Text>
       <FlatList
         data={familyMembers}
         keyExtractor={item => item.id}
         renderItem={renderFamilyMember}
-        ListEmptyComponent={<Text>No family members added yet.</Text>}
+        ListEmptyComponent={<Text>לא נוספו חברי משפחה עדיין.</Text>}
       />
     </View>
   );

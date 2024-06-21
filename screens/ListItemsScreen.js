@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert, ActivityIndicator  } from 'react-native';
+import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
-import { auth, firestore, database } from './../firebase';
-import { getItemsBySupermarket, getItemsFromAllSupermarkets, searchItemAcrossSupermarkets } from './../firebase';
+import { auth, firestore } from './../firebase';
+import { getItemsBySupermarket } from './../firebase';
 import CustomPrompt from './../CustomModal/CustomPrompt';
 
 const ListItemsScreen = ({ route }) => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
-  const { supermarketName, listName: selectedListName } = route.params|| {}; 
+  const { supermarketName, listName: selectedListName } = route.params || {};
   const [items, setItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [shoppingList, setShoppingList] = useState([]);
   const [listName, setListName] = useState(selectedListName);
   const [isModalVisible, setIsModalVisible] = useState(!selectedListName);
-  const [loading, setLoading] = useState(true); // Add loading state
-  
+  const [loading, setLoading] = useState(true);
+  const [isSharedList, setIsSharedList] = useState(false);
+
   useEffect(() => {
     const fetchItems = async () => {
       const itemsData = await getItemsBySupermarket(supermarketName);
@@ -24,18 +25,7 @@ const ListItemsScreen = ({ route }) => {
       setLoading(false);
     };
     fetchItems();
-  }, [supermarketName, isFocused]);  
-  
-  // const handlePromptSubmit = async (name) => {
-  //   if (name) {
-  //     setListName(name);
-  //     setIsModalVisible(false);
-  //     await createList(name);
-  //   } else {
-  //     Alert.alert('שגיאה', 'שם רשימת הקניות לא יכול להיות ריק');
-  //     // navigation.goBack();
-  //   }
-  // };
+  }, [supermarketName, isFocused]);
 
   const createList = async (name) => {
     const currentUser = auth.currentUser;
@@ -53,16 +43,25 @@ const ListItemsScreen = ({ route }) => {
     item.ItemCode.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  
   const addToShoppingList = async (item) => {
     const currentUser = auth.currentUser;
     if (currentUser && selectedListName) {
-      const userRef = firestore.collection('users').doc(currentUser.uid);
-      const supermarketRef = userRef.collection('shoppingLists').doc(supermarketName);
-      const listRef = supermarketRef.collection('lists').doc(selectedListName);
-      const listSnapshot = await listRef.get();
-
-      let updatedList;
+      let listRef;
+      let updatedList = [];
+      let sharedListRef;
+    
+      // Identify the correct list reference
+      if (isSharedList) {
+        sharedListRef = firestore.collection('sharedLists').doc(selectedListName);
+      } else {
+        const userRef = firestore.collection('users').doc(currentUser.uid);
+        const supermarketRef = userRef.collection('shoppingLists').doc(supermarketName);
+        listRef = supermarketRef.collection('lists').doc(selectedListName);
+      }
+    
+      // Check if the list exists
+      const listSnapshot = isSharedList ? await sharedListRef.get() : await listRef.get();
+    
       if (listSnapshot.exists) {
         updatedList = listSnapshot.data().items || [];
         const existingItem = updatedList.find(i => i.ItemCode === item.ItemCode);
@@ -73,56 +72,65 @@ const ListItemsScreen = ({ route }) => {
         } else {
           updatedList.push({ ...item, quantity: 1 });
         }
-      } else { 
-        // Create the list if it doesn't exist
-        await createList(selectedListName);
-        updatedList = [{ ...item, quantity: 1 }];
+    
+        // Update the list with the new item
+        if (isSharedList) {
+          await sharedListRef.update({ items: updatedList });
+          
+          // Propagate updates to collaborators' received lists
+          const sharedDoc = await sharedListRef.get();
+          const sharedData = sharedDoc.data();
+          for (const sharedUserId of sharedData.sharedWith) {
+            if (sharedUserId !== currentUser.uid) {
+              const sharedUserRef = firestore.collection('users').doc(sharedUserId);
+              const sharedUserDoc = await sharedUserRef.get();
+              const sharedUserData = sharedUserDoc.data();
+              const updatedReceivedLists = sharedUserData.receivedLists.map((list) => {
+                if (list.listName === selectedListName && list.supermarketName === supermarketName) {
+                  return { ...list, items: updatedList };
+                }
+                return list;
+              });
+              await sharedUserRef.update({ receivedLists: updatedReceivedLists });
+            }
+          }
+        } else {
+          await listRef.update({ items: updatedList });
+        }
+        setShoppingList(updatedList);
+      } else {
+        Alert.alert('שגיאה', 'רשימה זו אינה קיימת.');
       }
-
-      await listRef.set({ listName:selectedListName, items: updatedList }, { merge: true });
-      setShoppingList(updatedList);
     } else {
       Alert.alert('שגיאה', 'שם רשימת הקניות לא הוגדר. בבקשה נסה שוב.');
     }
   };
   
   const comparePrices = (item) => {
-    navigation.navigate('ComparePrices', { itemCode: item.ItemCode,itemName: item.ItemName });
-  };  
+    navigation.navigate('ComparePrices', { itemCode: item.ItemCode, itemName: item.ItemName });
+  };
 
   const renderSupermarketItem = ({ item }) => (
     <View style={styles.itemContainer}>
-     <View style={styles.roww}>
-      <TouchableOpacity onPress={() => addToShoppingList(item)}>
-        <FontAwesome name='plus' size={22} color="gray" />
-      </TouchableOpacity>
-      <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
-      
+      <View style={styles.roww}>
+        <TouchableOpacity onPress={() => addToShoppingList(item)}>
+          <FontAwesome name='plus' size={22} color="gray" />
+        </TouchableOpacity>
+        <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
       </View>
       <Text style={styles.itemName}>{item.ItemName}</Text>
-
       <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
       <View style={styles.roww}>
-      <TouchableOpacity onPress={() => comparePrices(item)} style={styles.compareButton}>
-         <Image 
-           source={require('./../assets/images/comper.png')} 
-           style={{ width: 25, height: 25 }} 
-         />      
-      </TouchableOpacity>
-      <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
-
+        <TouchableOpacity onPress={() => comparePrices(item)} style={styles.compareButton}>
+          <Image source={require('./../assets/images/comper.png')} style={{ width: 25, height: 25 }} />
+        </TouchableOpacity>
+        <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
       </View>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {/* <CustomPrompt
-        visible={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        onSubmit={handlePromptSubmit}
-      /> */}
-
       <View style={styles.logoContainer}>
         <View style={styles.navigation}>
           <TouchableOpacity style={styles.navItem} onPress={() => alert('בחר מהרשימה למטה או הקלד בחיפוש את שם המוצר שברצונך להוסיף לרשימה שלך')}>
@@ -147,21 +155,15 @@ const ListItemsScreen = ({ route }) => {
         </TouchableOpacity>
       </View>
 
-      {/* <TouchableOpacity style={styles.createListButton} onPress={() => setIsModalVisible(true)}>
-        <FontAwesome name='plus' size={22} color="white" />
-        <Text style={styles.createListButtonText}>ליצור רשימה חדשה</Text>
-      </TouchableOpacity> */}
-
       <TouchableOpacity style={styles.listButton} onPress={() => navigation.navigate('SupermarketLists', { supermarketName })}>
         <FontAwesome name="list" size={24} color="white" style={styles.listIcon} />
         <Text style={styles.listButtonText}>בחר לאיזו רשימה תוסיף או צור רשימה חדשה</Text>
       </TouchableOpacity>
-         
 
       <Text style={styles.supermarketName}>רשימת המוצרים</Text>
       <Text></Text>
 
-      {loading ? ( 
+      {loading ? (
         <ActivityIndicator size="large" color="#e9a1a1" />
       ) : (
         <FlatList
@@ -169,11 +171,11 @@ const ListItemsScreen = ({ route }) => {
           renderItem={renderSupermarketItem}
           keyExtractor={item => item.id.toString()}
         />
-    )}
-      <TouchableOpacity onPress={() => navigation.navigate('ShoppingList', { supermarketName, listName:selectedListName })} style={styles.backButton}>
-            <Text style={styles.backText}>חזור לרשימה שלי </Text>
-            <FontAwesome name="arrow-right" style={styles.backIcon} />
-      </TouchableOpacity> 
+      )}
+      <TouchableOpacity onPress={() => navigation.navigate('ShoppingList', { supermarketName, listName: selectedListName })} style={styles.backButton}>
+        <Text style={styles.backText}>חזור לרשימה שלי </Text>
+        <FontAwesome name="arrow-right" style={styles.backIcon} />
+      </TouchableOpacity>
     </View>
   );
 };

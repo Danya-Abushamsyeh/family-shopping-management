@@ -1,6 +1,5 @@
-// SharedListsScreen.js
-import React, { useState, useEffect, useCallback  } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { auth, firestore } from './../firebase';
 
@@ -11,44 +10,51 @@ const ShareList = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-    const fetchLists = async () => {
-      const currentUser = auth.currentUser;
+  const fetchLists = async () => {
+    const currentUser = auth.currentUser;
 
-      if (currentUser) {
+    if (currentUser) {
+      try {
         const userRef = firestore.collection('users').doc(currentUser.uid);
         const userDoc = await userRef.get();
         const userData = userDoc.data();
 
-        // Fetch shared lists
         const sharedListsData = [];
-        if (userData.sharedLists) {
-          for (const { listName, supermarketName } of userData.sharedLists) {
+        const receivedListsData = [];
+
+        // Fetch both shared and received lists
+        await Promise.all([
+          // Fetch shared lists
+          ...(userData.sharedLists || []).map(async ({ listName, supermarketName }) => {
             const sharedListRef = firestore.collection('sharedLists').doc(listName);
             const sharedDoc = await sharedListRef.get();
             if (sharedDoc.exists) {
-              sharedListsData.push({ id: sharedDoc.id, supermarketName, ...sharedDoc.data() });
+              sharedListsData.push({ id: listName, supermarketName, ...sharedDoc.data() });
             }
-          }
-        }
+          }),
 
-        // Fetch received lists
-        const receivedListsData = [];
-        if (userData.receivedLists) {
-          for (const { listName, supermarketName } of userData.receivedLists) {
+          // Fetch received lists
+          ...(userData.receivedLists || []).map(async ({ listName, supermarketName }) => {
             const receivedListRef = firestore.collection('sharedLists').doc(listName);
             const receivedDoc = await receivedListRef.get();
             if (receivedDoc.exists) {
-              receivedListsData.push({ id: receivedDoc.id, supermarketName, ...receivedDoc.data() });
+              receivedListsData.push({ id: listName, supermarketName, ...receivedDoc.data() });
             }
-          }
-        }
+          })
+        ]);
 
         setSharedLists(sharedListsData);
         setReceivedLists(receivedListsData);
         setLoading(false);
         setRefreshing(false);
+      } catch (error) {
+        console.error('Error fetching lists:', error);
+        Alert.alert('שגיאה', 'בעיה בטעינת הרשימות. בבקשה נסה שוב מאוחר יותר.');
+        setLoading(false);
+        setRefreshing(false);
       }
-    };
+    }
+  };
 
   useEffect(() => {
     fetchLists();
@@ -110,26 +116,35 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
     marginTop:45,
+    color:'#635A5A'
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 10,
-    textAlign:'right'
+    textAlign:'right',
+    color:'#635A5A'
+
   },
   listItem: {
-    padding: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    // padding: 15,
     backgroundColor: '#e9a1a1',
-    borderRadius: 5,
-    marginBottom: 10,
+    borderRadius: 4,
+    marginBottom: 8,
   },
   listName: {
     fontSize: 18,
-    textAlign:'right'
+    textAlign:'right',
+     fontWeight:'bold',
+     color:'#fff'
   },
   supermarketName: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#555',
     textAlign:'right'
   },

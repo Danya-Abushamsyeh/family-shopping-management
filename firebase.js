@@ -2,10 +2,11 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 import 'firebase/compat/database';
-import 'firebase/compat/storage'; 
+import 'firebase/compat/storage';
 import axios from 'axios';
 
 const apiKeys = [
+  'AIzaSyDRY1GfMPC8hjkZErTm8sa_P0484teqmGU',
   'AIzaSyAwtcAodl_4QdvERIqBVW4kZlNkYmCU64s',
   'AIzaSyCeKZ48A1S8gPx9vFNQj88NtddMPJwhgOw',
   'AIzaSyBm7EpqydsmGjWD_o438DeDVcS7PivzOLA',
@@ -33,7 +34,7 @@ if (!firebase.apps.length) {
 export const auth = firebase.auth();
 export const firestore = firebase.firestore();
 export const database = firebase.database();
-export const storage = firebase.storage(); 
+export const storage = firebase.storage();
 export const fieldValue = firebase.firestore.FieldValue;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -65,9 +66,9 @@ export const fetchImageUrl = async (query) => {
 };
 
 export const updateProductImages = async () => {
-  const supermarketNames = ['YohananofItems', 'osheradItems', 'ramilaviItems', 'shupersalItems', 'tivtaamItems', 'vectoryItems'];
-  const batchSize = 5; // Process 5 items per batch to reduce the load
-  const maxRetry = 5; // Maximum number of retries
+  const supermarketNames = ['vectoryItems'];
+  const batchSize = 5;
+  const maxRetry = 5;
 
   for (const supermarket of supermarketNames) {
     const snapshot = await database.ref(`${supermarket}`).once('value');
@@ -79,7 +80,7 @@ export const updateProductImages = async () => {
       let retry = 0;
 
       for (const key of batch) {
-        if (items[key].ItemName && !items[key].imageUrl) { 
+        if (items[key].ItemName && !items[key].imageUrl) {
           let success = false;
 
           while (!success && retry < maxRetry) {
@@ -93,17 +94,17 @@ export const updateProductImages = async () => {
             } catch (error) {
               if (error.message === 'Rate limit hit') {
                 retry += 1;
-                const waitTime = Math.min(60 * 1000, Math.pow(2, retry) * 1000); // Exponential backoff with cap at 60 seconds
+                const waitTime = Math.min(60 * 1000, Math.pow(2, retry) * 1000);
                 console.log(`Rate limit hit, waiting ${waitTime / 1000} seconds...`);
                 await sleep(waitTime);
               } else {
                 console.error(`Error updating item ${items[key].ItemName}:`, error);
-                success = true; 
+                success = true;
               }
             }
           }
 
-          await sleep(500); // delay between each request to avoid hitting the rate limit
+          await sleep(500);
         }
       }
     }
@@ -163,7 +164,7 @@ export const getItemsBySupermarket = async (supermarket) => {
     return itemsArray;
   } catch (error) {
     console.error('Error fetching items:', error);
-    return []; 
+    return [];
   }
 };
 

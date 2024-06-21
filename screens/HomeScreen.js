@@ -35,8 +35,8 @@ const HomeScreen = () => {
     <View>
       <View style={styles.logoContainer}>
         <View style={styles.navigation}>
-          <TouchableOpacity style={styles.navItem} onPress={() => alert('בחר את הסופרמרקט אליו תלך או הקלד בחיפוש את שם המוצר שברצונך להוסיף לרשימה שלך')}>
-            <Text>עזרה</Text>
+          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Help')}>
+          <FontAwesome name="question-circle" size={21} style={styles.buttonIcon} />
           </TouchableOpacity>
         </View>
         {/* <View style={styles.searchContainer}>
@@ -95,6 +95,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     marginLeft: 140,
+  },
+  buttonIcon:{
+   color:'#fff'
   },
   supermarketsContainer: {
     marginTop: 20,
