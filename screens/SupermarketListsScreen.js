@@ -63,6 +63,17 @@ const SupermarketListsScreen = () => {
       await listRef.set({ listName: name, items: [] }, { merge: true });
     }
   };
+  const clearAllItems = () => {
+    Alert.alert(
+      'מחק את הרשימה',
+      'האם אתה בטוח שאתה רוצה למחוק את הרשימה?',
+      [
+        { text: 'בטל', style: 'cancel' },
+        { text: 'אשור', onPress: () => deleteList() },
+      ],
+      { cancelable: false }
+    );
+  };
 
   const deleteList = async (listNameToDelete) => {
     try {
@@ -86,7 +97,7 @@ const SupermarketListsScreen = () => {
 
   const renderListItem = ({ item }) => (
     <View style={styles.listItemContainer}>
-      <TouchableOpacity onPress={() => deleteList(item.id)} style={styles.button}>
+      <TouchableOpacity onPress={() => clearAllItems(item.id)} style={styles.button}>
         <FontAwesome name="trash-o" style={styles.buttonIcon} />
       </TouchableOpacity>
       <TouchableOpacity style={styles.listItem} onPress={() => handleListPress(item.id)}>

@@ -37,85 +37,163 @@ export const database = firebase.database();
 export const storage = firebase.storage();
 export const fieldValue = firebase.firestore.FieldValue;
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const getNextApiKey = () => {
-  currentApiKeyIndex = (currentApiKeyIndex + 1) % apiKeys.length;
-  return apiKeys[currentApiKeyIndex];
-};
+// const getNextApiKey = () => {
+//   currentApiKeyIndex = (currentApiKeyIndex + 1) % apiKeys.length;
+//   return apiKeys[currentApiKeyIndex];
+// };
 
-export const fetchImageUrl = async (query) => {
-  const url = `https://www.googleapis.com/customsearch/v1?q=${query}&cx=${cx}&key=${getNextApiKey()}&searchType=image&num=1`;
-  try {
-    const response = await axios.get(url);
-    const data = response.data;
-    if (data.items && data.items.length > 0) {
-      const imageUrl = data.items[0].link;
-      const isValidFormat = /\.(jpg|jpeg|png)$/.test(imageUrl.toLowerCase());
-      if (isValidFormat) {
-        return imageUrl;
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching image URL:', error);
-    if (error.response && error.response.status === 429) {
-      throw new Error('Rate limit hit');
-    }
-  }
-  return null;
-};
+// export const fetchImageUrl = async (query) => {
+//   const url = `https://www.googleapis.com/customsearch/v1?q=${query}&cx=${cx}&key=${getNextApiKey()}&searchType=image&num=1`;
+//   try {
+//     const response = await axios.get(url);
+//     const data = response.data;
+//     if (data.items && data.items.length > 0) {
+//       const imageUrl = data.items[0].link;
+//       const isValidFormat = /\.(jpg|jpeg|png)$/.test(imageUrl.toLowerCase());
+//       if (isValidFormat) {
+//         return imageUrl;
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Error fetching image URL:', error);
+//     if (error.response && error.response.status === 429) {
+//       throw new Error('Rate limit hit');
+//     }
+//   }
+//   return null;
+// };
 
-export const updateProductImages = async () => {
-  const supermarketNames = ['vectoryItems'];
-  const batchSize = 5;
-  const maxRetry = 5;
 
-  for (const supermarket of supermarketNames) {
-    const snapshot = await database.ref(`${supermarket}`).once('value');
-    const items = snapshot.val();
-    const itemKeys = Object.keys(items);
+// export const updateProductImages = async () => {
+//   const supermarketNames = ['vectoryItems'];
+//   const batchSize = 5;
+//   const maxRetry = 5;
 
-    for (let i = 0; i < itemKeys.length; i += batchSize) {
-      const batch = itemKeys.slice(i, i + batchSize);
-      let retry = 0;
+//   for (const supermarket of supermarketNames) {
+//     const snapshot = await database.ref(`${supermarket}`).once('value');
+//     const items = snapshot.val();
+//     const itemKeys = Object.keys(items);
 
-      for (const key of batch) {
-        if (items[key].ItemName && !items[key].imageUrl) {
-          let success = false;
+//     for (let i = 0; i < itemKeys.length; i += batchSize) {
+//       const batch = itemKeys.slice(i, i + batchSize);
+//       let retry = 0;
 
-          while (!success && retry < maxRetry) {
-            try {
-              const imageUrl = await fetchImageUrl(items[key].ItemName);
-              if (imageUrl) {
-                await database.ref(`${supermarket}/${key}`).update({ imageUrl });
-                console.log(`Updated ${items[key].ItemName} with image URL: ${imageUrl}`);
-                success = true;
-              }
-            } catch (error) {
-              if (error.message === 'Rate limit hit') {
-                retry += 1;
-                const waitTime = Math.min(60 * 1000, Math.pow(2, retry) * 1000);
-                console.log(`Rate limit hit, waiting ${waitTime / 1000} seconds...`);
-                await sleep(waitTime);
-              } else {
-                console.error(`Error updating item ${items[key].ItemName}:`, error);
-                success = true;
-              }
-            }
-          }
+//       for (const key of batch) {
+//         if (items[key].ItemName && !items[key].imageUrl) {
+//           let success = false;
 
-          await sleep(500);
-        }
-      }
-    }
-  }
-};
+//           while (!success && retry < maxRetry) {
+//             try {
+//               let imageUrl = await fetchImageUrl(items[key].ItemName);
+//               // const isValidFormat = /\.(jpg|jpeg|png)$/.test(imageUrl.toLowerCase());
+//               // if (!isValidFormat) {
+//               //   imageUrl = 'https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png'; 
+//               // }
+//               if (imageUrl) {
+//                 await database.ref(`${supermarket}/${key}`).update({ imageUrl });
+//                 console.log(`Updated ${items[key].ItemName} with image URL: ${imageUrl}`);
+//                 success = true;
+//               }
+//             } catch (error) {
+//               if (error.message === 'Rate limit hit') {
+//                 retry += 1;
+//                 const waitTime = Math.min(60 * 1000, Math.pow(2, retry) * 1000);
+//                 console.log(`Rate limit hit, waiting ${waitTime / 1000} seconds...`);
+//                 await sleep(waitTime);
+//               } else {
+//                 console.error(`Error updating item ${items[key].ItemName}:`, error);
+//                 success = true;
+//               }
+//             }
+//           }
 
-updateProductImages().then(() => {
-  console.log('Product images updated successfully.');
-}).catch((error) => {
-  console.error('Error updating product images:', error);
-});
+//           await sleep(500);
+//         }
+//       }
+//     }
+//   }
+// };
+
+// updateProductImages().then(() => {
+//   console.log('Product images updated successfully.');
+// }).catch((error) => {
+//   console.error('Error updating product images:', error);
+// });
+
+// const categorizeItems = async () => {
+//   const supermarkets = ['vectoryItems'];
+
+//   for (const supermarket of supermarkets) {
+//     const snapshot = await database.ref(supermarket).once('value');
+//     const items = snapshot.val();
+
+//     if (!items) continue;
+
+//     for (const key in items) {
+//       if (items.hasOwnProperty(key)) {
+//         const item = items[key];
+//         let category = 'אחר';
+
+//         // Bakery and Pastry
+//         if (['קמח מלכים', 'מאפית י את א ברמן בע', 'המחמצת', 'מימונס אפיה','גידרון'].some(name => item.ManufactureName.includes(name)) ||
+//           ['עוגיות'].some(name => item.ItemName.includes(name))) {
+//           category = 'מאפייה ומאפים';
+//         }
+//         // Cleaning and Pharmacy
+//         else if (['יעקב יעקובי', 'פרוקטר & גמבל', 'פישר מעבדות פרמצבטיו', 'קרליין', 'סנו', 'איירוויק'].some(name => item.ManufactureName.includes(name)) ||
+//           ['דאב', 'איירוויק', 'סבון'].some(name => item.ItemName.includes(name))) {
+//           category = 'ניקוי הברקה ופארם';
+//         }
+//         // Fruits and Vegetables
+//         else if (['א.מ שרון', 'גרין האוס', 'ביכורי השקמה','*222219','א.אדמה'].some(name => item.ManufactureName.toLowerCase().includes(name.toLowerCase()))
+//           || ['ישראל'].some(name => item.ItemName.includes(name))) {
+//           category = 'פרות וירקות';
+//         }
+//         // Chocolate and Candy
+//         else if (['אסקום בעבור שטראוס', 'מאיר בייגל', 'נאטרא', 'כרמית', 'ארקור', 'סאדת גידה'].some(name => item.ManufactureName.includes(name)) ||
+//           ['שטראוס גרופ', 'בטר אנד דיפרנט', 'שוקולד', 'סוכריות', 'וופל'].some(name => item.ItemName.includes(name))) {
+//           category = 'שוקולד וממתקים';
+//         }
+//         // Drinks, Wine, and Alcohol
+//         else if (['קוקה', 'יקב בראשית', 'יקב עמק יזרעאל', 'יקבי כרמל'].some(name => item.ManufactureName.includes(name)) ||
+//           ['יין', 'בירה', 'מיץ', 'סודה'].some(name => item.ItemName.includes(name))) {
+//           category = 'משקאות יין ואלכוהול';
+//         }
+//         // Dairy and Eggs
+//         else if (['מחלבת', 'תנובה', 'טרה','*201890','*203760'].some(name => item.ManufactureName.toLowerCase().includes(name.toLowerCase())) ||
+//           ['משקה שיבולת', 'גבינת'].some(name => item.ItemName.includes(name))) {
+//           category = 'מוצרי חלב ובצים';
+//         }
+//         // Nuts and Dried Fruits
+//         else if (item.ManufactureName.toLowerCase().includes('דין שיווק') || item.ItemName.includes('פיצוחים')) {
+//           category = 'פיצוחים ופירות יבשים';
+//         }
+//         // Meat and Poultry
+//         else if (['זוגלובק', 'עוף'].some(name => item.ManufactureName.toLowerCase().includes(name.toLowerCase())) ||
+//           item.ItemName.includes('בשר')) {
+//           category = 'בשר ועופות';
+//         }
+//         // Cooking, Canned Food, and Preserved Food
+//         else if (['סוגת', 'שקדיה', 'גנדלוס','תבלינים'].some(name => item.ManufactureName.toLowerCase().includes(name.toLowerCase())) ||
+//           ['סויה', 'חוואיג', 'רוטב', 'מלח'].some(name => item.ItemName.includes(name))) {
+//           category = 'בישול מזון מקורר ושימורים';
+//         }
+//         // Household and Disposable Products
+//         else if (item.ManufactureName.includes('פאלאס') || item.ItemName.includes('נייר')) {
+//           category = 'מוצרי בית וחד פעמי';
+//         }
+
+//         await database.ref(`${supermarket}/${key}`).update({ Category: category });
+//       }
+//     }
+//   }
+
+//   console.log('Categorization complete');
+// };
+
+// categorizeItems().catch(console.error);
 
 export const createUserDocument = async (user, additionalData) => {
   if (!user) return;
@@ -224,3 +302,4 @@ export const updateUserProfileImage = async (userId, imageUrl) => {
 };
 
 export default firebase;
+

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert, ActivityIndicator } from 'react-native';
+import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert, ActivityIndicator, Modal } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
-import { auth, firestore } from './../firebase';
+import { auth, firestore, database } from './../firebase';
 import { getItemsBySupermarket } from './../firebase';
 import CustomPrompt from './../CustomModal/CustomPrompt';
 
@@ -17,15 +17,24 @@ const ListItemsScreen = ({ route }) => {
   const [isModalVisible, setIsModalVisible] = useState(!selectedListName);
   const [loading, setLoading] = useState(true);
   const [isSharedList, setIsSharedList] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
 
   useEffect(() => {
     const fetchItems = async () => {
       const itemsData = await getItemsBySupermarket(supermarketName);
       setItems(itemsData);
       setLoading(false);
+      extractCategories(itemsData);
     };
     fetchItems();
   }, [supermarketName, isFocused]);
+
+  const extractCategories = (items) => {
+    const uniqueCategories = [...new Set(items.map(item => item.Category || 'Other'))];
+    setCategories(uniqueCategories);
+  };
 
   const createList = async (name) => {
     const currentUser = auth.currentUser;
@@ -39,8 +48,9 @@ const ListItemsScreen = ({ route }) => {
   };
 
   const filteredItems = items.filter(item =>
-    item.ItemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.ItemCode.toLowerCase().includes(searchQuery.toLowerCase())
+    (item.ItemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.ItemCode.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (selectedCategory === '' || item.Category === selectedCategory)
   );
 
   const addToShoppingList = async (item) => {
@@ -49,7 +59,7 @@ const ListItemsScreen = ({ route }) => {
       let listRef;
       let updatedList = [];
       let sharedListRef;
-    
+
       // Identify the correct list reference
       if (isSharedList) {
         sharedListRef = firestore.collection('sharedLists').doc(selectedListName);
@@ -58,10 +68,10 @@ const ListItemsScreen = ({ route }) => {
         const supermarketRef = userRef.collection('shoppingLists').doc(supermarketName);
         listRef = supermarketRef.collection('lists').doc(selectedListName);
       }
-    
+
       // Check if the list exists
       const listSnapshot = isSharedList ? await sharedListRef.get() : await listRef.get();
-    
+
       if (listSnapshot.exists) {
         updatedList = listSnapshot.data().items || [];
         const existingItem = updatedList.find(i => i.ItemCode === item.ItemCode);
@@ -72,11 +82,11 @@ const ListItemsScreen = ({ route }) => {
         } else {
           updatedList.push({ ...item, quantity: 1 });
         }
-    
+
         // Update the list with the new item
         if (isSharedList) {
           await sharedListRef.update({ items: updatedList });
-          
+
           // Propagate updates to collaborators' received lists
           const sharedDoc = await sharedListRef.get();
           const sharedData = sharedDoc.data();
@@ -105,27 +115,28 @@ const ListItemsScreen = ({ route }) => {
       Alert.alert('שגיאה', 'שם רשימת הקניות לא הוגדר. בבקשה נסה שוב.');
     }
   };
-  
+
   const comparePrices = (item) => {
     navigation.navigate('ComparePrices', { itemCode: item.ItemCode, itemName: item.ItemName });
   };
 
   const renderSupermarketItem = ({ item }) => (
     <View style={styles.itemContainer}>
-      <View style={styles.roww}>
+      <View style={styles.col}>
         <TouchableOpacity onPress={() => addToShoppingList(item)}>
           <FontAwesome name='plus' size={22} color="gray" />
         </TouchableOpacity>
-        <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
-      </View>
-      <Text style={styles.itemName}>{item.ItemName}</Text>
-      <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
-      <View style={styles.roww}>
         <TouchableOpacity onPress={() => comparePrices(item)} style={styles.compareButton}>
           <Image source={require('./../assets/images/comper.png')} style={{ width: 25, height: 25 }} />
         </TouchableOpacity>
+      </View>
+      <View style={styles.texttext}>
+        <Text style={styles.itemName}>{item.ItemName}</Text>
+        <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
         <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
       </View>
+      <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
+
     </View>
   );
 
@@ -133,8 +144,8 @@ const ListItemsScreen = ({ route }) => {
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <View style={styles.navigation}>
-          <TouchableOpacity style={styles.navItem} onPress={() => alert('בחר מהרשימה למטה או הקלד בחיפוש את שם המוצר שברצונך להוסיף לרשימה שלך')}>
-            <Text>עזרה</Text>
+          <TouchableOpacity style={styles.navItem} onPress={() => setShowCategoriesModal(true)}>
+            <FontAwesome name='bars' size={24} color={'#fff'} />
           </TouchableOpacity>
         </View>
 
@@ -160,7 +171,7 @@ const ListItemsScreen = ({ route }) => {
         <Text style={styles.listButtonText}>בחר לאיזו רשימה תוסיף או צור רשימה חדשה</Text>
       </TouchableOpacity>
 
-      <Text style={styles.supermarketName}>רשימת המוצרים</Text>
+      {/* <Text style={styles.supermarketName}>רשימת המוצרים</Text> */}
       <Text></Text>
 
       {loading ? (
@@ -173,13 +184,49 @@ const ListItemsScreen = ({ route }) => {
         />
       )}
       <TouchableOpacity onPress={() => navigation.navigate('ShoppingList', { supermarketName, listName: selectedListName })} style={styles.backButton}>
-        <Text style={styles.backText}>חזור לרשימה שלי </Text>
-        <FontAwesome name="arrow-right" style={styles.backIcon} />
+        <Text style={styles.backText}> הרשימה שלי </Text>
+        <FontAwesome name="shopping-basket" style={styles.backIcon} />
       </TouchableOpacity>
+
+      <Modal
+        visible={showCategoriesModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCategoriesModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>קטגוריות</Text>
+            <FlatList
+              data={categories}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => {
+                    setSelectedCategory(item);
+                    setShowCategoriesModal(false);
+                  }}
+                >
+                  <Text style={styles.modalItemText}>{item}</Text>
+                </TouchableOpacity>
+              )}
+              keyExtractor={(item, index) => index.toString()}
+            />
+            <TouchableOpacity
+              style={styles.modalItem}
+              onPress={() => {
+                setSelectedCategory('');
+                setShowCategoriesModal(false);
+              }}
+            >
+              <Text style={styles.modalItemText}>הצג את כל המוצרים</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -229,32 +276,50 @@ const styles = StyleSheet.create({
   navigation: {
     flexDirection: 'row',
   },
-  supermarketItem: {
-    marginRight: 10,
-    alignItems: 'center',
+  categoriesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  categoryButton: {
+    backgroundColor: '#e9a1a1',
+    padding: 10,
+    margin: 5,
+    borderRadius: 5,
+  },
+  categoryText: {
+    color: 'white',
   },
   supermarketName: {
     marginTop: 5,
     textAlign: 'center',
     fontWeight: 'bold',
     color: '#464444',
-    fontSize: 18
+    fontSize: 22
   },
   itemContainer: {
     backgroundColor: '#fff',
-    padding: 10,
     marginBottom: 10,
-    borderRadius: 5,
     elevation: 2,
-    marginRight: 30,
-    marginLeft: 30
+    marginRight: 10,
+    marginLeft: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3.84,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    // padding: 5,
-    // marginTop: 10,
-    left:125
+    left: 140,
+    marginBottom:10,
+    marginTop:10
   },
   backIcon: {
     fontSize: 20,
@@ -264,38 +329,44 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 16,
     color: '#e9a1a1',
-    textAlign:'right',
-    left: 110,
-    // paddingHorizontal:8
-
+    textAlign: 'right',
+    left: 120,
   },
-  roww:{
+  texttext: {
+    alignItems: 'stretch',
+    right: 80,
+  },
+  col: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 100,
+  },
+  roww: {
     flexDirection: 'row',
   },
   itemImage: {
-    width:50,
-    height: 90,
-    paddingRight:80,
-    marginLeft:220
+    height: 50,
+    width: 50,
+    right:10
   },
   itemName: {
-    fontWeight: 'bold',
     fontSize: 16,
+    fontWeight: 'bold',
     textAlign: 'right',
-    // left:110,
-    // marginTop:20
-  },
-  itemPrice: {
-    color: '#888',
-    fontSize: 14,
-    textAlign: 'right',
-    left:215
+    left: 60,
   },
   ItemCode: {
-    color: '#888',
-    fontSize: 13,
-    marginLeft: 50,
-    textAlign: 'right'
+    fontSize: 14,
+    color: '#555',
+    textAlign: 'right',
+    left: 60,
+  },
+  itemPrice: {
+    fontSize: 14,
+    color: '#555',
+    textAlign: 'right',
+    left: 60,
   },
   listButton: {
     flexDirection: 'row',
@@ -316,7 +387,6 @@ const styles = StyleSheet.create({
   },
   listIcon: {
     paddingHorizontal: 10,
-    // right: 85
   },
   createListButton: {
     flexDirection: 'row',
@@ -330,12 +400,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: 'bold',
-    // marginLeft: 10,
-    // paddingHorizontal:110
-    paddingLeft:190
+    paddingLeft: 190
   },
   compareButton: {
     marginLeft: 1,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalItem: {
+    padding: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalItemText: {
+    fontSize: 16,
   },
 });
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image, View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect  } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import firebase, { firestore, auth, fieldValue } from './../firebase';
 import RNPickerSelect from 'react-native-picker-select';
@@ -68,23 +68,27 @@ const ShoppingList = () => {
     fetchItems();
   }, [route.params]);
 
-  useEffect(() => {
-    const fetchFamilyMembers = async () => {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userRef = firestore.collection('users').doc(currentUser.uid);
-        const userData = (await userRef.get()).data();
-        const family = userData.family || [];
-        const familyMemberPromises = family.map(async memberId => {
-          const memberData = (await firestore.collection('users').doc(memberId).get()).data();
-          return { id: memberId, email: memberData.email };
-        });
-        const familyMembersData = await Promise.all(familyMemberPromises);
-        setFamilyMembers(familyMembersData);
-      }
-    };
-    fetchFamilyMembers();
-  }, []);
+   const fetchFamilyMembers = async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const userRef = firestore.collection('users').doc(currentUser.uid);
+      const userData = (await userRef.get()).data();
+      const family = userData.family || [];
+      const familyMemberPromises = family.map(async memberId => {
+        const memberData = (await firestore.collection('users').doc(memberId).get()).data();
+        return { id: memberId, email: memberData.email };
+      });
+      const familyMembersData = await Promise.all(familyMemberPromises);
+      setFamilyMembers(familyMembersData);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchFamilyMembers();
+    }, [])
+  );
+
 
   const updateList = async (updatedList) => {
     try {
@@ -401,6 +405,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 30,
     marginTop: 16,
+    elevation: 2,
+
   },
   roww: {
     // flexDirection: 'row',
@@ -409,40 +415,44 @@ const styles = StyleSheet.create({
   },
   item: {
     flexDirection: 'row',
+    justifyContent:'space-between',
+    alignItems:'center',
     padding: 15,
     backgroundColor: '#f9f9f9',
     borderRadius: 5,
     marginBottom: 10,
   },
   itemImage: {
-    height: 90,
-    paddingRight: 75,
-    left: 85
+    height: 60,
+    width:60,
+    // paddingRight: 75,
+    // left: 85
   },
   itemName: {
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'right',
-    left: 70
+    left: 60
   },
   ItemCode: {
     fontSize: 14,
     color: '#555',
     textAlign: 'right',
-    left: 70
+    left: 60
 
   },
   itemPrice: {
     fontSize: 14,
     color: '#555',
     textAlign: 'right',
-    left: 70
+    left: 60
 
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
+    right:10
   },
   quantityIcon: {
     fontSize: 20,
@@ -459,12 +469,12 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     position: 'absolute',
-    left: 10,
-    top: 20
+    left: 20,
   },
   deleteIcon: {
     fontSize: 20,
     color: '#e9a1a1',
+    right:20
   },
   buttonsContainer: {
     flexDirection: 'row',
@@ -500,7 +510,7 @@ const styles = StyleSheet.create({
     right: 120
   },
   backText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#e9a1a1',
     right: 115,
     textAlign:'right',
