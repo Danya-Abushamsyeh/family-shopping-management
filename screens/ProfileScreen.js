@@ -47,11 +47,11 @@ const ProfileScreen = ({ navigation }) => {
       quality: 1,
     });
 
-    console.log('Image picker result:', result); // Added logging
+    // console.log('Image picker result:', result);
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const uri = result.assets[0].uri;
-      console.log('Selected image URI:', uri); // Debugging line
+      // console.log('Selected image URI:', uri); 
       const currentUser = auth.currentUser;
       if (currentUser) {
         try {

@@ -67,7 +67,7 @@ export const fieldValue = firebase.firestore.FieldValue;
 
 
 // export const updateProductImages = async () => {
-//   const supermarketNames = ['vectoryItems'];
+//   const supermarketNames = ['Victory'];
 //   const batchSize = 5;
 //   const maxRetry = 5;
 
@@ -123,8 +123,8 @@ export const fieldValue = firebase.firestore.FieldValue;
 // });
 
 // const categorizeItems = async () => {
-//   const supermarkets = ['vectoryItems'];
-
+//   const supermarkets = ['Yochananof'];
+// // , 'Osherad', 'Ramilevi', 'Shupersal', 'Tivtaam'
 //   for (const supermarket of supermarkets) {
 //     const snapshot = await database.ref(supermarket).once('value');
 //     const items = snapshot.val();
@@ -137,51 +137,52 @@ export const fieldValue = firebase.firestore.FieldValue;
 //         let category = 'אחר';
 
 //         // Bakery and Pastry
-//         if (['קמח מלכים', 'מאפית י את א ברמן בע', 'המחמצת', 'מימונס אפיה','גידרון'].some(name => item.ManufactureName.includes(name)) ||
-//           ['עוגיות'].some(name => item.ItemName.includes(name))) {
+//         if (['קמח מלכים', 'מאפית י את א ברמן בע', 'המחמצת', 'מימונס אפיה','גידרון'].some(name => item.ManufacturerName.includes(name)) ||
+//           ['עוגיות','לחם'].some(name => item.ItemName.includes(name))) {
 //           category = 'מאפייה ומאפים';
 //         }
 //         // Cleaning and Pharmacy
-//         else if (['יעקב יעקובי', 'פרוקטר & גמבל', 'פישר מעבדות פרמצבטיו', 'קרליין', 'סנו', 'איירוויק'].some(name => item.ManufactureName.includes(name)) ||
-//           ['דאב', 'איירוויק', 'סבון'].some(name => item.ItemName.includes(name))) {
+//         else if (['יעקב יעקובי', 'פרוקטר & גמבל', 'פישר מעבדות פרמצבטיו', 'קרליין', 'סנו', 'איירוויק','פרוקטר אנד גמבל'].some(name => item.ManufacturerName.includes(name)) ||
+//           ['דאב', 'איירוויק', 'סבון','בישום','פיניש','פמפרס','פרסיל','מרכך','שמפו','אולוויז'].some(name => item.ItemName.includes(name))) {
 //           category = 'ניקוי הברקה ופארם';
 //         }
 //         // Fruits and Vegetables
-//         else if (['א.מ שרון', 'גרין האוס', 'ביכורי השקמה','*222219','א.אדמה'].some(name => item.ManufactureName.toLowerCase().includes(name.toLowerCase()))
+//         else if (['א.מ שרון', 'גרין האוס', 'ביכורי השקמה','*222219','א.אדמה','משתנה'].some(name => item.ManufacturerName.toLowerCase().includes(name.toLowerCase()))
 //           || ['ישראל'].some(name => item.ItemName.includes(name))) {
 //           category = 'פרות וירקות';
 //         }
 //         // Chocolate and Candy
-//         else if (['אסקום בעבור שטראוס', 'מאיר בייגל', 'נאטרא', 'כרמית', 'ארקור', 'סאדת גידה'].some(name => item.ManufactureName.includes(name)) ||
-//           ['שטראוס גרופ', 'בטר אנד דיפרנט', 'שוקולד', 'סוכריות', 'וופל'].some(name => item.ItemName.includes(name))) {
+//         else if (['אסקום בעבור שטראוס', 'מאיר בייגל', 'נאטרא', 'כרמית', 'ארקור', 'סאדת גידה','סוכרזית'].some(name => item.ManufacturerName.includes(name)) ||
+//           ['שטראוס גרופ', 'בטר אנד דיפרנט', 'שוקולד', 'סוכריות', 'וופל','קליק','מנטוס','ביסקוויט'].some(name => item.ItemName.includes(name))) {
 //           category = 'שוקולד וממתקים';
 //         }
 //         // Drinks, Wine, and Alcohol
-//         else if (['קוקה', 'יקב בראשית', 'יקב עמק יזרעאל', 'יקבי כרמל'].some(name => item.ManufactureName.includes(name)) ||
-//           ['יין', 'בירה', 'מיץ', 'סודה'].some(name => item.ItemName.includes(name))) {
+//         else if (['קוקה', 'יקב בראשית', 'יקב עמק יזרעאל', 'יקבי כרמל'].some(name => item.ManufacturerName.includes(name)) ||
+//           ['יין', 'בירה', 'מיץ', 'סודה','שוופס','ווין','פפסי','ליפטון','קפה טורקי'].some(name => item.ItemName.includes(name))) {
 //           category = 'משקאות יין ואלכוהול';
 //         }
 //         // Dairy and Eggs
-//         else if (['מחלבת', 'תנובה', 'טרה','*201890','*203760'].some(name => item.ManufactureName.toLowerCase().includes(name.toLowerCase())) ||
-//           ['משקה שיבולת', 'גבינת'].some(name => item.ItemName.includes(name))) {
+//         else if (['מחלבת', 'תנובה', 'טרה','*201890','*203760'].some(name => item.ManufacturerName.toLowerCase().includes(name.toLowerCase())) ||
+//           ['משקה שיבולת', 'גבינת','אקטיביה'].some(name => item.ItemName.includes(name))) {
 //           category = 'מוצרי חלב ובצים';
 //         }
 //         // Nuts and Dried Fruits
-//         else if (item.ManufactureName.toLowerCase().includes('דין שיווק') || item.ItemName.includes('פיצוחים')) {
-//           category = 'פיצוחים ופירות יבשים';
+//         else if (item.ManufacturerName.toLowerCase().includes('דין שיווק') || 
+//          ['ביסלי', 'פיצוחים','חטיף','ציטוס','בייגלה','דוריטוס'].some(name => item.ItemName.includes(name))) {
+//           category = ' פיצוחים ופירות יבשים וחטיפים';
 //         }
 //         // Meat and Poultry
-//         else if (['זוגלובק', 'עוף'].some(name => item.ManufactureName.toLowerCase().includes(name.toLowerCase())) ||
+//         else if (['זוגלובק', 'עוף'].some(name => item.ManufacturerName.toLowerCase().includes(name.toLowerCase())) ||
 //           item.ItemName.includes('בשר')) {
 //           category = 'בשר ועופות';
 //         }
 //         // Cooking, Canned Food, and Preserved Food
-//         else if (['סוגת', 'שקדיה', 'גנדלוס','תבלינים'].some(name => item.ManufactureName.toLowerCase().includes(name.toLowerCase())) ||
-//           ['סויה', 'חוואיג', 'רוטב', 'מלח'].some(name => item.ItemName.includes(name))) {
+//         else if (['סוגת', 'שקדיה', 'גנדלוס','תבלינים','יד מרדכי'].some(name => item.ManufacturerName.toLowerCase().includes(name.toLowerCase())) ||
+//           ['סויה', 'חוואיג', 'רוטב', 'מלח','אורגנו','נודלס','פסטה','אורז','מאכל','מיונז'].some(name => item.ItemName.includes(name))) {
 //           category = 'בישול מזון מקורר ושימורים';
 //         }
 //         // Household and Disposable Products
-//         else if (item.ManufactureName.includes('פאלאס') || item.ItemName.includes('נייר')) {
+//         else if (item.ManufacturerName.includes('פאלאס') || item.ItemName.includes('נייר')) {
 //           category = 'מוצרי בית וחד פעמי';
 //         }
 
@@ -233,7 +234,7 @@ export const getUserDocument = async (uid) => {
 
 export const getItemsBySupermarket = async (supermarket) => {
   try {
-    const snapshot = await firebase.database().ref(`${supermarket}Items`).once('value');
+    const snapshot = await firebase.database().ref(`${supermarket}`).once('value');
     const itemsData = snapshot.val();
     const itemsArray = Object.keys(itemsData).map((key) => ({
       id: key,
@@ -247,7 +248,8 @@ export const getItemsBySupermarket = async (supermarket) => {
 };
 
 export const getItemsFromAllSupermarkets = async () => {
-  const supermarketNames = ['YohananofItems', 'osheradItems', 'ramilaviItems', 'shupersalItems', 'tivtaamItems', 'vectoryItems'];
+  const supermarketNames = ['Yochananof', 'Osherad', 'Ramilevi', 'Shupersal', 'Tivtaam','Victory'];
+  // 
   const items = {};
 
   for (const supermarket of supermarketNames) {

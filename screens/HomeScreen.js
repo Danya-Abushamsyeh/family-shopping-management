@@ -5,12 +5,12 @@ import React from 'react';
 import { FontAwesome } from '@expo/vector-icons';
 
 const supermarkets = [
-  { id: 1, name: 'ramilavi', imageUrl: require('./../assets/images/rami.jpg') },
-  { id: 2, name: 'osherad', imageUrl: require('./../assets/images/osher.png') },
-  { id: 3, name: 'shupersal', imageUrl: require('./../assets/images/shupersl.jpeg') },
-  { id: 4, name: 'tivtaam', imageUrl: require('./../assets/images/tiv.jpg') },
-  { id: 5, name: 'vectory', imageUrl: require('./../assets/images/vic.jpg') },
-  { id: 6, name: 'Yohananof', imageUrl: require('./../assets/images/images.png') },
+  { id: 1, name: 'Ramilevi', imageUrl: require('./../assets/images/rami.jpg') },
+  { id: 2, name: 'Osherad', imageUrl: require('./../assets/images/osher.png') },
+  { id: 3, name: 'Shupersal', imageUrl: require('./../assets/images/shupersl.jpeg') },
+  { id: 4, name: 'Tivtaam', imageUrl: require('./../assets/images/tiv.jpg') },
+  { id: 5, name: 'Victory', imageUrl: require('./../assets/images/vic.jpg') },
+  { id: 6, name: 'Yochananof', imageUrl: require('./../assets/images/images.png') },
   { id: 7},
 
 ];

@@ -177,30 +177,37 @@ const ShoppingList = () => {
       Alert.alert('שגיאה', 'אנא בחר בן משפחה לשתף איתו את הרשימה.');
       return;
     }
-
+  
     try {
-      const currentUser = auth.currentUser.uid;
+      const currentUser = auth.currentUser;
+      const userDoc = await firestore.collection('users').doc(currentUser.uid).get();
+      const displayName = userDoc.data().displayName;
+  
+      // Fetch the selected family member's details
+      const familyMemberDoc = await firestore.collection('users').doc(selectedFamilyMember).get();
+      const familyMemberData = familyMemberDoc.data();
+  
       const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
       const doc = await sharedListRef.get();
       if (doc.exists) {
         await sharedListRef.update({
-          sharedWith: fieldValue.arrayUnion(selectedFamilyMember),
+          sharedWith: fieldValue.arrayUnion({  displayName: familyMemberData.displayName }),
           items: shoppingList,
-          sharedBy: currentUser
+          sharedBy: displayName 
         });
       } else {
         await sharedListRef.set({
-          sharedWith: [selectedFamilyMember],
+          sharedWith: [{displayName: familyMemberData.displayName }],
           items: shoppingList,
           listName: listNameState,
           supermarketName,
-          sharedBy: currentUser
+          sharedBy: displayName 
         });
       }
       await firestore.collection('users').doc(selectedFamilyMember).update({
-        receivedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName })
+        receivedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName, sharedBy: displayName })
       });
-      await firestore.collection('users').doc(currentUser).update({
+      await firestore.collection('users').doc(currentUser.uid).update({
         sharedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName })
       });
       Alert.alert('בוצע', 'הרשימה שותפה בהצלחה.');
@@ -210,6 +217,8 @@ const ShoppingList = () => {
       Alert.alert('שגיאה', 'נכשל בשיתוף הרשימה. בבקשה נסה שוב מאוחר יותר.');
     }
   };
+  
+  
 
   const totalPrice = shoppingList.reduce((acc, item) => acc + (parseFloat(item.ItemPrice) * (item.quantity || 1)), 0);
 

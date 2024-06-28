@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
 import { auth, firestore, fieldValue } from './../firebase';
+import { FontAwesome } from '@expo/vector-icons';
 
 const AddFamilyMember = () => {
   const [email, setEmail] = useState('');
@@ -193,5 +194,7 @@ const styles = StyleSheet.create({
   },
   removeButtonText: {
     color: '#fff',
+    paddingLeft:3,
+    paddingRight:2
   },
 });

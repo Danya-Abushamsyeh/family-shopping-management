@@ -7,8 +7,9 @@ import { getItemsFromAllSupermarkets, searchItemAcrossSupermarkets } from './../
 const ComparePricesScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { itemCode, itemName } = route.params;
+  const { itemCode, itemName, supermarketName } = route.params;
   const [comparisonResults, setComparisonResults] = useState([]);
+  const [cheapestSupermarket, setCheapestSupermarket] = useState('');
   const [loading, setLoading] = useState(true);
 
   const fetchComparisonResults = async () => {
@@ -20,6 +21,11 @@ const ComparePricesScreen = () => {
       }
       const results = searchItemAcrossSupermarkets(items, itemCode);
       setComparisonResults(results);
+
+      if (results.length > 0) {
+        const cheapest = results.reduce((prev, curr) => (prev.itemPrice < curr.itemPrice ? prev : curr));
+        setCheapestSupermarket(cheapest.supermarket);
+      }
     } catch (error) {
       console.error('Error fetching items:', error);
     } finally {
@@ -34,15 +40,15 @@ const ComparePricesScreen = () => {
   );
 
   const handleItemPress = (supermarket) => {
-    navigation.navigate('ListItems', supermarket);
+    navigation.navigate('ListItems', { supermarketName: supermarket });
   };
 
   const renderComparisonItem = ({ item }) => (
-    <TouchableOpacity style={styles.listItem} >
+    <TouchableOpacity style={styles.listItem}>
       <View style={styles.itemContainer}>
         <Text style={styles.supermarketName}>סופרמרקט: {item.supermarket}</Text>
         <Text style={styles.itemName}>מוצר: {item.itemName}</Text>
-        <Text style={styles.itemPrice}>מחיר: {item.itemPrice}</Text>
+        <Text style={styles.itemPrice}>מחיר: {item.itemPrice} ₪</Text>
       </View>
     </TouchableOpacity>
   );
@@ -52,23 +58,27 @@ const ComparePricesScreen = () => {
       <View style={styles.logoContainer}>
       </View>
       <View style={styles.rowww}>
-        {/* <TouchableOpacity onPress={() => navigation.navigate('ShoppingList', { supermarketName, listName })} style={styles.backButton}>
-         <FontAwesome name="arrow-left" style={styles.backIcon} />
-        </TouchableOpacity> */}
-        <Text style={styles.title}>השוואת מחירים עבור {itemName} {itemCode}</Text>
-        </View>
+        <Text style={styles.title}>השוואת מחירים עבור {itemName} ({itemCode})</Text>
+      </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#e9a1a1" />
       ) : (
-        <FlatList
-          data={comparisonResults}
-          renderItem={renderComparisonItem}
-          keyExtractor={(item, index) => `${item.supermarket}-${item.itemCode}-${index}`}
-        />
+        <>
+          <FlatList
+            data={comparisonResults}
+            renderItem={renderComparisonItem}
+            keyExtractor={(item, index) => `${item.supermarket}-${item.itemCode}-${index}`}
+          />
+          {cheapestSupermarket ? (
+            <View style={styles.adviceContainer}>
+              <Text style={styles.adviceText}>המחיר הזול ביותר נמצא ב: {cheapestSupermarket}. אם אתם מחפשים את המחיר הזול ביותר, לכו לשם.</Text>
+            </View>
+          ) : null}
+        </>
       )}
 
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('ListItems', { supermarketName })}>
         <FontAwesome name="arrow-left" style={styles.backIcon} />
         <Text style={styles.backText}>חזור לרשימת המוצרים </Text>
       </TouchableOpacity>
@@ -94,7 +104,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  rowww:{
+  rowww: {
     backgroundColor: '#e9a1a1',
   },
   listItem: {
@@ -105,7 +115,7 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 4,
     marginBottom: 8,
-    marginTop:20
+    marginTop: 20
   },
   navigation: {
     flexDirection: 'row',
@@ -119,7 +129,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
-    color:'#fff',
+    color: '#fff',
   },
   itemContainer: {
     backgroundColor: '#fff',
@@ -156,6 +166,17 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 16,
     color: '#e9a1a1',
+  },
+  adviceContainer: {
+    padding: 10,
+    backgroundColor: '#e9a1a1',
+    borderRadius: 5,
+    margin: 20,
+  },
+  adviceText: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#fff',
   },
 });
 

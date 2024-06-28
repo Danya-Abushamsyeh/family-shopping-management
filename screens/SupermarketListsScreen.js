@@ -96,14 +96,14 @@ const SupermarketListsScreen = () => {
   };
 
   const renderListItem = ({ item }) => (
-    <View style={styles.listItemContainer}>
+    <TouchableOpacity style={styles.listItemContainer}>
       <TouchableOpacity onPress={() => clearAllItems(item.id)} style={styles.button}>
         <FontAwesome name="trash-o" style={styles.buttonIcon} />
       </TouchableOpacity>
       <TouchableOpacity style={styles.listItem} onPress={() => handleListPress(item.id)}>
         <Text style={styles.listName}>{item.listName}</Text>
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -126,7 +126,7 @@ const SupermarketListsScreen = () => {
       )}
 
       <TouchableOpacity style={styles.createListButton} onPress={() => setIsModalVisible(true)}>
-        <FontAwesome name='plus' size={22} color="white" />
+        <FontAwesome name='cart-plus' size={22} color="white" />
         <Text style={styles.createListButtonText}>ליצור רשימה חדשה</Text>
       </TouchableOpacity>
        <TouchableOpacity onPress={() => navigation.navigate('ListItems', { supermarketName })} style={styles.backButton}>

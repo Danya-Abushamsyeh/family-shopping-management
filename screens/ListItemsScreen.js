@@ -117,7 +117,7 @@ const ListItemsScreen = ({ route }) => {
   };
 
   const comparePrices = (item) => {
-    navigation.navigate('ComparePrices', { itemCode: item.ItemCode, itemName: item.ItemName });
+    navigation.navigate('ComparePrices', { itemCode: item.ItemCode, itemName: item.ItemName, supermarketName });
   };
 
   const renderSupermarketItem = ({ item }) => (

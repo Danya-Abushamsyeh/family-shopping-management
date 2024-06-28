@@ -29,16 +29,18 @@ const ShareList = () => {
             const sharedListRef = firestore.collection('sharedLists').doc(listName);
             const sharedDoc = await sharedListRef.get();
             if (sharedDoc.exists) {
-              sharedListsData.push({ id: listName, supermarketName, ...sharedDoc.data() });
+              const sharedWith = sharedDoc.data().sharedWith || [];
+              const sharedWithNames = sharedWith.map(member => member.displayName).join(', ');
+              sharedListsData.push({ id: listName, supermarketName, sharedWithNames, ...sharedDoc.data() });
             }
           }),
 
           // Fetch received lists
-          ...(userData.receivedLists || []).map(async ({ listName, supermarketName }) => {
+          ...(userData.receivedLists || []).map(async ({ listName, supermarketName, sharedBy }) => {
             const receivedListRef = firestore.collection('sharedLists').doc(listName);
             const receivedDoc = await receivedListRef.get();
             if (receivedDoc.exists) {
-              receivedListsData.push({ id: listName, supermarketName, ...receivedDoc.data() });
+              receivedListsData.push({ id: listName, supermarketName, sharedBy, ...receivedDoc.data() });
             }
           })
         ]);
@@ -69,10 +71,15 @@ const ShareList = () => {
     navigation.navigate('ShoppingList', { supermarketName, listName });
   };
 
-  const renderListItem = ({ item }) => (
+  const renderListItem = ({ item, sharedList }) => (
     <TouchableOpacity style={styles.listItem} onPress={() => handleListPress(item.id, item.supermarketName)}>
       <Text style={styles.listName}>{item.listName}</Text>
       <Text style={styles.supermarketName}>{item.supermarketName}</Text>
+      {sharedList ? (
+        <Text style={styles.sharedWithNames}>שותף עם: {item.sharedWithNames}</Text>
+      ) : (
+        <Text style={styles.sharedBy}>שותף על ידי: {item.sharedBy}</Text>
+      )}
     </TouchableOpacity>
   );
 
@@ -86,7 +93,7 @@ const ShareList = () => {
           <Text style={styles.sectionTitle}>רשימות ששותפו על ידך</Text>
           <FlatList
             data={sharedLists}
-            renderItem={renderListItem}
+            renderItem={({ item }) => renderListItem({ item, sharedList: true })}
             keyExtractor={(item) => item.id}
             refreshing={refreshing}
             onRefresh={handleRefresh}
@@ -94,7 +101,7 @@ const ShareList = () => {
           <Text style={styles.sectionTitle}>רשימות ששותפו איתך</Text>
           <FlatList
             data={receivedLists}
-            renderItem={renderListItem}
+            renderItem={({ item }) => renderListItem({ item, sharedList: false })}
             keyExtractor={(item) => item.id}
             refreshing={refreshing}
             onRefresh={handleRefresh}
@@ -115,38 +122,46 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
-    marginTop:45,
-    color:'#635A5A'
+    marginTop: 45,
+    color: '#635A5A'
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 10,
-    textAlign:'right',
-    color:'#635A5A'
-
+    textAlign: 'right',
+    color: '#635A5A'
   },
   listItem: {
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
-    // padding: 15,
     backgroundColor: '#e9a1a1',
     borderRadius: 4,
     marginBottom: 8,
   },
   listName: {
     fontSize: 18,
-    textAlign:'right',
-     fontWeight:'bold',
-     color:'#fff'
+    textAlign: 'right',
+    fontWeight: 'bold',
+    color: '#fff'
   },
   supermarketName: {
     fontSize: 12,
     color: '#555',
-    textAlign:'right'
+    textAlign: 'right'
+  },
+  sharedWithNames: {
+    fontSize: 12,
+    color: '#fff',
+    textAlign: 'right'
+  },
+  sharedBy: {
+    fontSize: 12,
+    color: '#fff',
+    textAlign: 'right'
   },
 });
 
