@@ -330,7 +330,7 @@ const ShoppingList = () => {
                 value={shareWithAll}
                 onValueChange={(value) => setShareWithAll(value)}
               />
-              <Text style={styles.switchLabel}>שתף עם כולם</Text>
+              <Text style={styles.switchLabel}>שתף עם כל המשפחה</Text>
             </View>
             {!shareWithAll && (
               <RNPickerSelect

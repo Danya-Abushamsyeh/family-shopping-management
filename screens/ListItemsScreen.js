@@ -32,7 +32,7 @@ const ListItemsScreen = ({ route }) => {
   }, [supermarketName, isFocused]);
 
   const extractCategories = (items) => {
-    const uniqueCategories = [...new Set(items.map(item => item.Category || 'Other'))];
+    const uniqueCategories = [...new Set(items.map(item => item.Category || 'אחר'))];
     setCategories(uniqueCategories);
   };
 
