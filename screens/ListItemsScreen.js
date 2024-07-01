@@ -115,7 +115,7 @@ const ListItemsScreen = ({ route }) => {
       Alert.alert('שגיאה', 'שם רשימת הקניות לא הוגדר. בבקשה נסה שוב.');
     }
   };
-
+  
   const comparePrices = (item) => {
     navigation.navigate('ComparePrices', { itemCode: item.ItemCode, itemName: item.ItemName, supermarketName });
   };

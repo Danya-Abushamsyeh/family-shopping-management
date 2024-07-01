@@ -12,16 +12,16 @@ const ShareList = () => {
 
   const fetchLists = async () => {
     const currentUser = auth.currentUser;
-
+  
     if (currentUser) {
       try {
         const userRef = firestore.collection('users').doc(currentUser.uid);
         const userDoc = await userRef.get();
         const userData = userDoc.data();
-
+  
         const sharedListsData = [];
         const receivedListsData = [];
-
+  
         // Fetch both shared and received lists
         await Promise.all([
           // Fetch shared lists
@@ -34,7 +34,7 @@ const ShareList = () => {
               sharedListsData.push({ id: listName, supermarketName, sharedWithNames, ...sharedDoc.data() });
             }
           }),
-
+  
           // Fetch received lists
           ...(userData.receivedLists || []).map(async ({ listName, supermarketName, sharedBy }) => {
             const receivedListRef = firestore.collection('sharedLists').doc(listName);
@@ -44,7 +44,7 @@ const ShareList = () => {
             }
           })
         ]);
-
+  
         setSharedLists(sharedListsData);
         setReceivedLists(receivedListsData);
         setLoading(false);
@@ -57,112 +57,114 @@ const ShareList = () => {
       }
     }
   };
-
-  useEffect(() => {
-    fetchLists();
-  }, []);
-
-  const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchLists();
-  }, []);
-
-  const handleListPress = (listName, supermarketName) => {
-    navigation.navigate('ShoppingList', { supermarketName, listName });
+  
+  
+    useEffect(() => {
+      fetchLists();
+    }, []);
+  
+    const handleRefresh = useCallback(() => {
+      setRefreshing(true);
+      fetchLists();
+    }, []);
+  
+    const handleListPress = (listName, supermarketName) => {
+      navigation.navigate('ShoppingList', { supermarketName, listName });
+    };
+  
+    const renderListItem = ({ item, sharedList }) => (
+      <TouchableOpacity style={styles.listItem} onPress={() => handleListPress(item.id, item.supermarketName)}>
+        <Text style={styles.listName}>{item.listName}</Text>
+        <Text style={styles.supermarketName}>{item.supermarketName}</Text>
+        {sharedList ? (
+          <Text style={styles.sharedWithNames}>שותף עם: {item.sharedWithNames}</Text>
+        ) : (
+          <Text style={styles.sharedBy}>שותף על ידי: {item.sharedBy}</Text>
+        )}
+      </TouchableOpacity>
+    );
+  
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>רשימות משותפות</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#e9a1a1" />
+        ) : (
+          <>
+            <Text style={styles.sectionTitle}>רשימות ששותפו על ידך</Text>
+            <FlatList
+              data={sharedLists}
+              renderItem={({ item }) => renderListItem({ item, sharedList: true })}
+              keyExtractor={(item) => item.id}
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+            />
+            <Text style={styles.sectionTitle}>רשימות ששותפו איתך</Text>
+            <FlatList
+              data={receivedLists}
+              renderItem={({ item }) => renderListItem({ item, sharedList: false })}
+              keyExtractor={(item) => item.id}
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+            />
+          </>
+        )}
+      </View>
+    );
   };
-
-  const renderListItem = ({ item, sharedList }) => (
-    <TouchableOpacity style={styles.listItem} onPress={() => handleListPress(item.id, item.supermarketName)}>
-      <Text style={styles.listName}>{item.listName}</Text>
-      <Text style={styles.supermarketName}>{item.supermarketName}</Text>
-      {sharedList ? (
-        <Text style={styles.sharedWithNames}>שותף עם: {item.sharedWithNames}</Text>
-      ) : (
-        <Text style={styles.sharedBy}>שותף על ידי: {item.sharedBy}</Text>
-      )}
-    </TouchableOpacity>
-  );
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>רשימות משותפות</Text>
-      {loading ? (
-        <ActivityIndicator size="large" color="#e9a1a1" />
-      ) : (
-        <>
-          <Text style={styles.sectionTitle}>רשימות ששותפו על ידך</Text>
-          <FlatList
-            data={sharedLists}
-            renderItem={({ item }) => renderListItem({ item, sharedList: true })}
-            keyExtractor={(item) => item.id}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-          />
-          <Text style={styles.sectionTitle}>רשימות ששותפו איתך</Text>
-          <FlatList
-            data={receivedLists}
-            renderItem={({ item }) => renderListItem({ item, sharedList: false })}
-            keyExtractor={(item) => item.id}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-          />
-        </>
-      )}
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    marginTop: 45,
-    color: '#635A5A'
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
-    textAlign: 'right',
-    color: '#635A5A'
-  },
-  listItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    backgroundColor: '#e9a1a1',
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  listName: {
-    fontSize: 18,
-    textAlign: 'right',
-    fontWeight: 'bold',
-    color: '#fff'
-  },
-  supermarketName: {
-    fontSize: 12,
-    color: '#555',
-    textAlign: 'right'
-  },
-  sharedWithNames: {
-    fontSize: 12,
-    color: '#fff',
-    textAlign: 'right'
-  },
-  sharedBy: {
-    fontSize: 12,
-    color: '#fff',
-    textAlign: 'right'
-  },
-});
-
-export default ShareList;
+  
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      textAlign: 'center',
+      marginTop: 45,
+      color: '#635A5A'
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginTop: 20,
+      marginBottom: 10,
+      textAlign: 'right',
+      color: '#635A5A'
+    },
+    listItem: {
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: '#ccc',
+      backgroundColor: '#e9a1a1',
+      borderRadius: 4,
+      marginBottom: 8,
+    },
+    listName: {
+      fontSize: 18,
+      textAlign: 'right',
+      fontWeight: 'bold',
+      color: '#fff'
+    },
+    supermarketName: {
+      fontSize: 12,
+      color: '#555',
+      textAlign: 'right'
+    },
+    sharedWithNames: {
+      fontSize: 12,
+      color: '#fff',
+      textAlign: 'right'
+    },
+    sharedBy: {
+      fontSize: 12,
+      color: '#fff',
+      textAlign: 'right'
+    },
+  });
+  
+  export default ShareList;
+  
