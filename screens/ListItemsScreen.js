@@ -59,8 +59,7 @@ const ListItemsScreen = ({ route }) => {
       let listRef;
       let updatedList = [];
       let sharedListRef;
-
-      // Identify the correct list reference
+  
       if (isSharedList) {
         sharedListRef = firestore.collection('sharedLists').doc(selectedListName);
       } else {
@@ -68,44 +67,37 @@ const ListItemsScreen = ({ route }) => {
         const supermarketRef = userRef.collection('shoppingLists').doc(supermarketName);
         listRef = supermarketRef.collection('lists').doc(selectedListName);
       }
-
-      // Check if the list exists
+  
       const listSnapshot = isSharedList ? await sharedListRef.get() : await listRef.get();
-
       if (listSnapshot.exists) {
         updatedList = listSnapshot.data().items || [];
         const existingItem = updatedList.find(i => i.ItemCode === item.ItemCode);
         if (existingItem) {
           updatedList = updatedList.map(i =>
-            i.ItemCode === item.ItemCode ? { ...i, quantity: (i.quantity || 1) + 1 } : i
+            i.ItemCode === item.ItemCode ? { ...i, quantity: (i.quantity || 1) + 1, modifiedBy: currentUser.displayName } : i
           );
         } else {
-          updatedList.push({ ...item, quantity: 1 });
+          updatedList.push({ ...item, quantity: 1, modifiedBy: currentUser.displayName });
         }
-
-        // Update the list with the new item
+  
         if (isSharedList) {
           await sharedListRef.update({ items: updatedList });
-
-          // Propagate updates to collaborators' received lists
+  
+          // Update in users' `shoppingLists` collection
           const sharedDoc = await sharedListRef.get();
           const sharedData = sharedDoc.data();
           for (const sharedUserId of sharedData.sharedWith) {
-            if (sharedUserId !== currentUser.uid) {
-              const sharedUserRef = firestore.collection('users').doc(sharedUserId);
-              const sharedUserDoc = await sharedUserRef.get();
-              const sharedUserData = sharedUserDoc.data();
-              const updatedReceivedLists = sharedUserData.receivedLists.map((list) => {
-                if (list.listName === selectedListName && list.supermarketName === supermarketName) {
-                  return { ...list, items: updatedList };
-                }
-                return list;
-              });
-              await sharedUserRef.update({ receivedLists: updatedReceivedLists });
-            }
+            const sharedUserRef = firestore.collection('users').doc(sharedUserId.id);
+            const supermarketRef = sharedUserRef.collection('shoppingLists').doc(supermarketName);
+            const userListRef = supermarketRef.collection('lists').doc(selectedListName);
+            await userListRef.set({ items: updatedList }, { merge: true });
           }
         } else {
           await listRef.update({ items: updatedList });
+  
+          // Ensure the update is reflected in the sharedLists collection if the list is shared
+          const sharedListRef = firestore.collection('sharedLists').doc(selectedListName);
+          await sharedListRef.update({ items: updatedList });
         }
         setShoppingList(updatedList);
       } else {

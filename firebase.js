@@ -65,7 +65,6 @@ export const fieldValue = firebase.firestore.FieldValue;
 //   return null;
 // };
 
-
 // export const updateProductImages = async () => {
 //   const supermarketNames = ['Victory'];
 //   const batchSize = 5;
@@ -81,19 +80,16 @@ export const fieldValue = firebase.firestore.FieldValue;
 //       let retry = 0;
 
 //       for (const key of batch) {
-//         if (items[key].ItemName && !items[key].imageUrl) {
+//         const item = items[key];
+//         if (item.ItemCode && !item.imageUrl) {
 //           let success = false;
 
 //           while (!success && retry < maxRetry) {
 //             try {
-//               let imageUrl = await fetchImageUrl(items[key].ItemName);
-//               // const isValidFormat = /\.(jpg|jpeg|png)$/.test(imageUrl.toLowerCase());
-//               // if (!isValidFormat) {
-//               //   imageUrl = 'https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png'; 
-//               // }
+//               let imageUrl = await fetchImageUrl(item.ItemCode);
 //               if (imageUrl) {
 //                 await database.ref(`${supermarket}/${key}`).update({ imageUrl });
-//                 console.log(`Updated ${items[key].ItemName} with image URL: ${imageUrl}`);
+//                 console.log(`Updated ${item.ItemCode} with image URL: ${imageUrl}`);
 //                 success = true;
 //               }
 //             } catch (error) {
@@ -103,7 +99,7 @@ export const fieldValue = firebase.firestore.FieldValue;
 //                 console.log(`Rate limit hit, waiting ${waitTime / 1000} seconds...`);
 //                 await sleep(waitTime);
 //               } else {
-//                 console.error(`Error updating item ${items[key].ItemName}:`, error);
+//                 console.error(`Error updating item ${item.ItemCode}:`, error);
 //                 success = true;
 //               }
 //             }

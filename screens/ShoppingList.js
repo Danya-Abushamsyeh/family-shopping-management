@@ -20,53 +20,63 @@ const ShoppingList = () => {
 
   useEffect(() => {
     const fetchItems = async () => {
-      try {
-        const userId = auth.currentUser.uid;
+        try {
+            const userId = auth.currentUser.uid;
 
-        const listDocRef = firestore
-          .collection('users')
-          .doc(userId)
-          .collection('shoppingLists')
-          .doc(supermarketName)
-          .collection('lists')
-          .doc(listName);
+            const listDocRef = firestore
+                .collection('users')
+                .doc(userId)
+                .collection('shoppingLists')
+                .doc(supermarketName)
+                .collection('lists')
+                .doc(listName);
 
-        const unsubscribe = listDocRef.onSnapshot(async (doc) => {
-          if (doc.exists) {
-            const { items, listName: fetchedListName } = doc.data();
-            setShoppingList(items || []);
-            setListNameState(fetchedListName || listName);
-            setIsSharedList(false);
-          } else {
-            const sharedListRef = firestore.collection('sharedLists').doc(listName);
-            const sharedDoc = await sharedListRef.get();
-            if (sharedDoc.exists) {
-              const { items, listName: fetchedListName, sharedWith } = sharedDoc.data();
-              if (sharedWith.some(member => member.id === userId)) {
-                setShoppingList(items || []);
-                setListNameState(fetchedListName || listName);
-                setIsSharedList(true);
-              } else {
-                Alert.alert('שגיאה', 'אין לך גישה לרשימה זו.');
-                navigation.goBack();
-              }
-            } else {
-              Alert.alert('שגיאה', 'המסמך לא קיים!');
-              navigation.goBack();
-            }
-          }
-          setLoading(false);
-        });
+            const unsubscribe = listDocRef.onSnapshot(async (doc) => {
+                if (doc.exists) {
+                    const { items, listName: fetchedListName } = doc.data();
+                    setShoppingList(items || []);
+                    setListNameState(fetchedListName || listName);
+                    setIsSharedList(false);
+                } else {
+                    const sharedListRef = firestore.collection('sharedLists').doc(listName);
+                    const sharedDoc = await sharedListRef.get();
+                    if (sharedDoc.exists) {
+                        const { items, listName: fetchedListName, sharedWith } = sharedDoc.data();
+                        if (sharedWith.some(member => member.id === userId)) {
+                            setShoppingList(items || []);
+                            setListNameState(fetchedListName || listName);
+                            setIsSharedList(true);
 
-        return () => unsubscribe();
-      } catch (error) {
-        console.error('Error fetching items:', error);
-        setLoading(false);
-      }
+                            // Update user's `shoppingLists` collection
+                            const userListRef = firestore
+                                .collection('users')
+                                .doc(userId)
+                                .collection('shoppingLists')
+                                .doc(supermarketName)
+                                .collection('lists')
+                                .doc(listName);
+                            await userListRef.set({ items, listName: fetchedListName }, { merge: true });
+                        } else {
+                            Alert.alert('שגיאה', 'אין לך גישה לרשימה זו.');
+                            navigation.goBack();
+                        }
+                    } else {
+                        Alert.alert('שגיאה', 'המסמך לא קיים!');
+                        navigation.goBack();
+                    }
+                }
+                setLoading(false);
+            });
+
+            return () => unsubscribe();
+        } catch (error) {
+            console.error('Error fetching items:', error);
+            setLoading(false);
+        }
     };
 
     fetchItems();
-  }, [route.params]);
+}, [route.params]);
 
   const fetchFamilyMembers = async () => {
     const currentUser = auth.currentUser;
@@ -93,25 +103,19 @@ const ShoppingList = () => {
     try {
       const userId = auth.currentUser.uid;
       let listRef;
-
+  
       if (isSharedList) {
         listRef = firestore.collection('sharedLists').doc(listNameState);
         await listRef.update({ items: updatedList });
-
+  
         const sharedDoc = await listRef.get();
         const sharedData = sharedDoc.data();
         for (const sharedUserId of sharedData.sharedWith) {
           if (sharedUserId.id !== userId) {
             const sharedUserRef = firestore.collection('users').doc(sharedUserId.id);
-            const sharedUserDoc = await sharedUserRef.get();
-            const sharedUserData = sharedUserDoc.data();
-            const updatedReceivedLists = sharedUserData.receivedLists.map((list) => {
-              if (list.listName === listNameState && list.supermarketName === supermarketName) {
-                return { ...list, items: updatedList };
-              }
-              return list;
-            });
-            await sharedUserRef.update({ receivedLists: updatedReceivedLists });
+            const supermarketRef = sharedUserRef.collection('shoppingLists').doc(supermarketName);
+            const userListRef = supermarketRef.collection('lists').doc(listNameState);
+            await userListRef.set({ items: updatedList }, { merge: true });
           }
         }
       } else {
@@ -123,12 +127,17 @@ const ShoppingList = () => {
           .collection('lists')
           .doc(listNameState);
         await listRef.update({ items: updatedList });
+  
+        // Ensure the update is reflected in the sharedLists collection if the list is shared
+        const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
+        await sharedListRef.update({ items: updatedList });
       }
     } catch (error) {
       console.error('שגיאה בעדכון הרשימה:', error);
       Alert.alert('שגיאה', 'עדכון הרשימה נכשל. בבקשה נסה שוב מאוחר יותר.');
     }
   };
+  
 
   const deleteList = async () => {
     try {
@@ -314,6 +323,11 @@ const ShoppingList = () => {
             <FontAwesome name="arrow-left" style={styles.backIcon} />
             <Text style={styles.backText}>חזור לרשימת המוצרים</Text>
           </TouchableOpacity>
+          {/* <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
+              <FontAwesome name="trash" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>שמור את הכל</Text>
+            </TouchableOpacity> */}
+
           <Text style={styles.title}>{listNameState}</Text>
           <FlatList
             data={shoppingList}
@@ -503,7 +517,7 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20
+    marginTop: 30
   },
   backIcon: {
     fontSize: 20,
