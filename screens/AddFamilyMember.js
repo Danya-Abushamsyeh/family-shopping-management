@@ -155,6 +155,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 12,
     textAlign: 'center',
+    fontWeight:'bold',
+    color:'#635A5A'
   },
   input: {
     height: 40,
@@ -168,11 +170,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#635A5A',
     paddingVertical: 15,
     paddingHorizontal: 30,
-    width: '100%',
+    width: '90%',
     alignItems: 'center',
-    borderRadius: 99,
+    borderRadius: 16,
     marginTop: 20,
     marginBottom: 60,
+    alignSelf:'center'
   },
   buttonText: {
     color: '#fff',

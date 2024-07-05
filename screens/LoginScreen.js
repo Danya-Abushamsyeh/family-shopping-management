@@ -27,8 +27,24 @@ const LoginScreen = () => {
         navigation.navigate('tab'); 
     } catch (error) {
         Alert.alert('Login Error', error.message);
+    } finally {
+      setLoading(false);
     }
-};
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('שגיאה', 'אנא הזן את כתובת האימייל שלך.');
+      return;
+    }
+
+    try {
+      await auth.sendPasswordResetEmail(email);
+      Alert.alert('שחזור סיסמה', 'אימייל לשחזור סיסמה נשלח בהצלחה.');
+    } catch (error) {
+      Alert.alert('שגיאה', error.message);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -58,23 +74,26 @@ const LoginScreen = () => {
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
             <FontAwesome name={showPassword ? 'eye-slash' : 'eye'} size={15} color="gray" style={styles.eye} />
           </TouchableOpacity>
-      </View>
-      <View style={styles.buttonContainer}>
-       <TouchableOpacity
-         style={styles.button} 
-         onPress={handleLogin}
-         disabled={loading}>
-       {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonOutlineText}>התחברות</Text>}
-       </TouchableOpacity>
+        </View>
+        
+        <TouchableOpacity style={styles.forgotPasswordLink} onPress={handleForgotPassword}>
+          <Text style={styles.forgotPasswordText}>שכחת סיסמה?</Text>
+        </TouchableOpacity>
 
-       <TouchableOpacity style={styles.signupLink} onPress={handleLsign}>
-            <Text style={styles.signupText}>אין לך חשבון? הירשם</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonOutlineText}>התחברות</Text>}
           </TouchableOpacity>
 
-
+          <TouchableOpacity style={styles.signupLink} onPress={handleLsign}>
+            <Text style={styles.signupText}>אין לך חשבון? הירשם</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-
     </KeyboardAvoidingView>
   )
 }
@@ -176,4 +195,14 @@ const styles = StyleSheet.create({
     eye:{
     right:4,
    }
-  });
+   ,
+  forgotPasswordLink: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: '#464444',
+    textDecorationLine: 'underline',
+  },
+});

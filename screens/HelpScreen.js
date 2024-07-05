@@ -1,116 +1,124 @@
-// // HelpScreen.js
-// import React from 'react';
-// import { View, Text, StyleSheet, ScrollView } from 'react-native';
-
-// const HelpScreen = () => {
-//   return (
-//     <ScrollView style={styles.container}>
-//       <Text style={styles.header}>כיצד להשתמש באפליקציה</Text>
-      
-//       <Text style={styles.subheader}>1. הוספת מוצרים לרשימת קניות</Text>
-//       <Text style={styles.text}>- היכנס למסך 'רשימת מוצרים' ובחר את המוצרים שברצונך להוסיף על ידי לחיצה על כפתור ה'+' שליד כל מוצר.</Text>
-
-//       <Text style={styles.subheader}>2. יצירת רשימת קניות חדשה</Text>
-//       <Text style={styles.text}>- במסך 'רשימות סופרמרקט', לחץ על הכפתור 'ליצור רשימה חדשה'. הזן את שם הרשימה ולחץ על אישור.</Text>
-      
-//       <Text style={styles.subheader}>3. שיתוף רשימת קניות</Text>
-//       <Text style={styles.text}>- במסך 'רשימת קניות', הזן את כתובת האימייל של בן המשפחה שברצונך לשתף איתו את הרשימה ולחץ על 'שתף'.</Text>
-      
-//       <Text style={styles.subheader}>4. השוואת מחירים</Text>
-//       <Text style={styles.text}>- במסך 'רשימת מוצרים', לחץ על כפתור 'השוואת מחירים' שליד כל מוצר כדי לראות את המחירים בסופרמרקטים שונים.</Text>
-
-//       <Text style={styles.subheader}>5. עזרה נוספת</Text>
-//       <Text style={styles.text}>- לפניות נוספות, נא ליצור קשר עם התמיכה שלנו דרך האפליקציה.</Text>
-//     </ScrollView>
-//   );
-// };
-
-// export default HelpScreen;
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     padding: 20,
-//     backgroundColor: '#fff',
-//     marginTop:50
-//   },
-//   header: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//     marginBottom: 20,
-//     textAlign: 'center',
-//   },
-//   subheader: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     marginBottom: 10,
-//     textAlign: 'right',
-
-//   },
-//   text: {
-//     fontSize: 16,
-//     marginBottom: 20,
-//     textAlign: 'right',
-
-//   },
-// });
-
-// screens/HelpScreen.js
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { FontAwesome } from '@expo/vector-icons';
 
 const HelpScreen = () => {
+  const navigation = useNavigation();
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.header}>ברוכים הבאים לאפליקציית ניהול קניות משפחתית!</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.header}>עזרה והנחיות שימוש באפליקציה</Text>
       
-      <Text style={styles.sectionHeader}>התחלה</Text>
-      <Text style={styles.text}>1. הירשם או היכנס לחשבון שלך.</Text>
-      <Text style={styles.text}>2. צור רשימת קניות חדשה על ידי ניווט לסעיף 'צור רשימה'.</Text>
-      <Text style={styles.text}>3. הוסף פריטים לרשימה שלך על ידי חיפוש מוצרים ובחירתם.</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>רישום והתחברות</Text>
+        <Text style={styles.text}>
+          - כדי להתחיל להשתמש באפליקציה, עליך להירשם עם כתובת הדוא"ל שלך.
+          {"\n"} - לאחר הרישום, תוכל להתחבר באמצעות כתובת הדוא"ל והסיסמה שבחרת.
+          {"\n"} - אם שכחת את הסיסמה, תוכל לאפס אותה על ידי לחיצה על "שכחתי סיסמה" בדף ההתחברות.
+        </Text>
+      </View>
 
-      <Text style={styles.sectionHeader}>ניהול פרופיל</Text>
-      <Text style={styles.text}>1. צפה וערוך את הפרופיל שלך על ידי ניווט לסעיף 'פרופיל'.</Text>
-      {/* <Text style={styles.text}>2. עדכן את תמונת הפרופיל שלך על ידי לחיצה על התמונה הנוכחית ובחירת חדשה.</Text> */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>יצירת רשימות קניות</Text>
+        <Text style={styles.text}>
+          - כדי ליצור רשימת קניות חדשה, בחר את הסופרמרקט הרצוי ולחץ על "צור רשימה חדשה".
+          {"\n"} - תן שם לרשימה ולחץ על "אישור". כעת תוכל להוסיף פריטים לרשימה זו.
+        </Text>
+      </View>
 
-      <Text style={styles.sectionHeader}>שיתוף רשימות</Text>
-      <Text style={styles.text}>1. שתף את הרשימות שלך עם בני משפחה על ידי ניווט לסעיף 'שתף רשימה'.</Text>
-      <Text style={styles.text}>2. הכנס את כתובת האימייל של האדם שאתה רוצה לשתף איתו את הרשימה.</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>הוספת פריטים לרשימה</Text>
+        <Text style={styles.text}>
+          - כדי להוסיף פריט לרשימה, עליך לבחור לאיזו רשימה ברצונך להוסיף 
+          {"\n"} - לחץ על כפתור "+" להוסיף להרשימה.
+        </Text>
+      </View>
 
-      <Text style={styles.sectionHeader}>השוואת מחירים</Text>
-      <Text style={styles.text}>1. השווה מחירי מוצרים בין סופרמרקטים שונים על ידי ניווט לסעיף 'השוואת מחירים'.</Text>
-      <Text style={styles.text}>2. בחר מוצר כדי לצפות במחיריו בסופרמרקטים שונים.</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>שיתוף רשימות קניות</Text>
+        <Text style={styles.text}>
+          - ניתן לשתף רשימות קניות עם בני משפחה על ידי בחירת בן משפחה מרשימת אנשי הקשר או לשתף עם כולם.
+          {"\n"} - בן המשפחה המשותף יוכל לעדכן את הרשימה בזמן אמת.
+        </Text>
+      </View>
 
-      {/* <Text style={styles.sectionHeader}>עזרה ותמיכה</Text>
-      <Text style={styles.text}>לעזרה נוספת, צור קשר עם צוות התמיכה שלנו בכתובת support@example.com.</Text> */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>השוואת מחירים</Text>
+        <Text style={styles.text}>
+          - האפליקציה מאפשרת להשוות מחירים בין סופרמרקטים שונים.
+          {"\n"} - בחר את הרשימה שברצונך להשוות ולחץ על "השווה מחירים".
+          {"\n"} - תוצג לך רשימת הסופרמרקטים עם המחירים השונים, מה שיאפשר לך לבחור את הסופרמרקט המשתלם ביותר.
+        </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>ניהול פרופיל</Text>
+        <Text style={styles.text}>
+          - ניתן לעדכן את פרטי הפרופיל, כולל תמונת הפרופיל.
+          {"\n"} - הכנס לדף הפרופיל שלך ולחץ על "ערוך פרופיל".
+          {"\n"} - עדכן את הפרטים הרצויים ושמור את השינויים.
+        </Text>
+      </View>
+
+      <View style={styles.backButtonContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <FontAwesome name="arrow-left" style={styles.backIcon} />
+          <Text style={styles.backText}>חזור</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     padding: 20,
     backgroundColor: '#fff',
   },
   header: {
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 25,
     textAlign: 'center',
-    marginTop:40
+    marginTop:35
   },
-  sectionHeader: {
-    fontSize: 20,
+  section: {
+    marginBottom: 25,
+  },
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    marginVertical: 10,
+    marginBottom: 15,
     textAlign:'right'
   },
   text: {
     fontSize: 16,
-    marginBottom: 10,
+    lineHeight: 24,
     textAlign:'right'
 
+  },
+  backButtonContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#e9a1a1',
+    borderRadius: 5,
+    width:'50%',
+  },
+  backIcon: {
+    fontSize: 20,
+    color: '#fff',
+    marginRight: 10,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#fff',
+    left:35
   },
 });
 

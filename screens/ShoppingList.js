@@ -539,14 +539,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#e9a1a1',
     borderRadius: 5,
     marginBottom: 4,
+    
   },
   buttonIcon: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#fff',
     marginRight: 5,
   },
   buttonText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#fff',
   },
   backButton: {
