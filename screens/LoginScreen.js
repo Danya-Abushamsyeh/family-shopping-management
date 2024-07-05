@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
+import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import firebase from './../firebase';
+import { useNavigation } from '@react-navigation/native';
+import { FontAwesome } from '@expo/vector-icons'; 
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = () => {
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const auth = firebase.auth();
   const handleLsign = () => {
@@ -12,6 +17,11 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('שגיאה', 'אנא מלא את כל השדות.');
+      return;
+    }
+    setLoading(true);
     try {
         await auth.signInWithEmailAndPassword(email, password);
         navigation.navigate('tab'); 
@@ -37,25 +47,30 @@ const LoginScreen = ({ navigation }) => {
         onChangeText={setEmail}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="סיסמא"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="סיסמא"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <FontAwesome name={showPassword ? 'eye-slash' : 'eye'} size={15} color="gray" style={styles.eye} />
+          </TouchableOpacity>
+      </View>
       <View style={styles.buttonContainer}>
        <TouchableOpacity
          style={styles.button} 
-         onPress={handleLogin}>
-         <Text style={styles.buttonText}>התחברות</Text>
+         onPress={handleLogin}
+         disabled={loading}>
+       {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonOutlineText}>התחברות</Text>}
        </TouchableOpacity>
 
-       <View style={styles.navigation}>
-          <TouchableOpacity style={styles.navItem} onPress={handleLsign}>
-            <Text>אין לך חשבון? הירשם</Text>
+       <TouchableOpacity style={styles.signupLink} onPress={handleLsign}>
+            <Text style={styles.signupText}>אין לך חשבון? הירשם</Text>
           </TouchableOpacity>
-        </View>
+
 
       </View>
     </View>
@@ -112,7 +127,7 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       padding:15,
       backgroundColor:'#635A5A',
-      borderRadius:99,
+      borderRadius:10,
       marginTop:50
     },
     buttonText: {
@@ -127,8 +142,38 @@ const styles = StyleSheet.create({
       borderColor: '#635A5A', 
     },
     buttonOutlineText: {
-      color: '#635A5A', 
+      color: '#fff', 
       fontSize: 14,
       fontWeight: 'bold',
     },
+    signupLink: {
+      marginTop: 20,
+    },
+    signupText: {
+      fontSize: 14,
+      color: '#464444',
+      textDecorationLine: 'underline',
+      textAlign: 'center',
+    },
+    passwordContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderColor: 'gray',
+      borderWidth: 1,
+      borderRadius: 8,
+      width: '100%',
+      marginBottom: 20,
+  
+    },
+    passwordInput: {
+      flex: 1,
+      height: 40,
+      paddingLeft: 10,
+      justifyContent: 'center',
+      // alignItems: 'center',
+      textAlign: 'left',  
+    },
+    eye:{
+    right:4,
+   }
   });
