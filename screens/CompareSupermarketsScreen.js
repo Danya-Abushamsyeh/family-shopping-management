@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Image, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import { getItemsFromAllSupermarkets } from './../firebase';
@@ -10,22 +10,26 @@ const CompareSupermarketsScreen = () => {
   const { shoppingList, supermarketName, listName } = route.params;
   const [comparisonResults, setComparisonResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    const fetchComparisonResults = async () => {
+    fetchComparisonResults();
+  }, [shoppingList]);
+
+  const fetchComparisonResults = async () => {
       try {
         const items = await getItemsFromAllSupermarkets();
         const results = calculateComparisonResults(items, shoppingList);
         setComparisonResults(results);
         setLoading(false);
+        setRefreshing(false);
       } catch (error) {
         console.error('Error fetching comparison results:', error);
         setLoading(false);
+        setRefreshing(false);
       }
     };
 
-    fetchComparisonResults();
-  }, [shoppingList]);
 
   const calculateComparisonResults = (allItems, shoppingList) => {
     const supermarkets = Object.keys(allItems);
@@ -67,6 +71,11 @@ const CompareSupermarketsScreen = () => {
     </View>
   );
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchComparisonResults();
+  };
+  
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
@@ -86,9 +95,14 @@ const CompareSupermarketsScreen = () => {
           data={comparisonResults}
           renderItem={renderComparisonItem}
           keyExtractor={(item, index) => `${item.supermarket}-${index}`}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+           />
+          }
         />
       )}
-
     </View>
   );
 };
@@ -113,9 +127,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   rowww:{
-    // flexDirection: 'row',
     backgroundColor: '#e9a1a1',
-
   },
   navItem: {
     marginLeft: 20,
@@ -124,18 +136,22 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    // marginBottom: 20,
     textAlign: 'center',
     backgroundColor: '#e9a1a1',
     color:'#fff',
-    padding:15
+    padding:10,
   },
   itemContainer: {
+    paddingTop:15,
     padding: 15,
     backgroundColor: '#fff',
     borderRadius: 7,
-    marginBottom: 10,
-    elevation: 2,
+    marginBottom: 5, 
+    marginRight: 10,
+    marginLeft: 10,
+    margin:5,
+
+    
   },
   supermarketName: {
     fontSize: 18,

@@ -17,66 +17,68 @@ const ShoppingList = () => {
   const [familyMembers, setFamilyMembers] = useState([]);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState('');
   const [shareWithAll, setShareWithAll] = useState(true);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showItemModal, setShowItemModal] = useState(false);
 
   useEffect(() => {
     const fetchItems = async () => {
-        try {
-            const userId = auth.currentUser.uid;
+      try {
+        const userId = auth.currentUser.uid;
 
-            const listDocRef = firestore
-                .collection('users')
-                .doc(userId)
-                .collection('shoppingLists')
-                .doc(supermarketName)
-                .collection('lists')
-                .doc(listName);
+        const listDocRef = firestore
+          .collection('users')
+          .doc(userId)
+          .collection('shoppingLists')
+          .doc(supermarketName)
+          .collection('lists')
+          .doc(listName);
 
-            const unsubscribe = listDocRef.onSnapshot(async (doc) => {
-                if (doc.exists) {
-                    const { items, listName: fetchedListName } = doc.data();
-                    setShoppingList(items || []);
-                    setListNameState(fetchedListName || listName);
-                    setIsSharedList(false);
-                } else {
-                    const sharedListRef = firestore.collection('sharedLists').doc(listName);
-                    const sharedDoc = await sharedListRef.get();
-                    if (sharedDoc.exists) {
-                        const { items, listName: fetchedListName, sharedWith } = sharedDoc.data();
-                        if (sharedWith.some(member => member.id === userId)) {
-                            setShoppingList(items || []);
-                            setListNameState(fetchedListName || listName);
-                            setIsSharedList(true);
+        const unsubscribe = listDocRef.onSnapshot(async (doc) => {
+          if (doc.exists) {
+            const { items, listName: fetchedListName } = doc.data();
+            setShoppingList(items || []);
+            setListNameState(fetchedListName || listName);
+            setIsSharedList(false);
+          } else {
+            const sharedListRef = firestore.collection('sharedLists').doc(listName);
+            const sharedDoc = await sharedListRef.get();
+            if (sharedDoc.exists) {
+              const { items, listName: fetchedListName, sharedWith } = sharedDoc.data();
+              if (sharedWith.some(member => member.id === userId)) {
+                setShoppingList(items || []);
+                setListNameState(fetchedListName || listName);
+                setIsSharedList(true);
 
-                            // Update user's `shoppingLists` collection
-                            const userListRef = firestore
-                                .collection('users')
-                                .doc(userId)
-                                .collection('shoppingLists')
-                                .doc(supermarketName)
-                                .collection('lists')
-                                .doc(listName);
-                            await userListRef.set({ items, listName: fetchedListName }, { merge: true });
-                        } else {
-                            Alert.alert('שגיאה', 'אין לך גישה לרשימה זו.');
-                            navigation.goBack();
-                        }
-                    } else {
-                        Alert.alert('שגיאה', 'המסמך לא קיים!');
-                        navigation.goBack();
-                    }
-                }
-                setLoading(false);
-            });
+                // Update user's `shoppingLists` collection
+                const userListRef = firestore
+                  .collection('users')
+                  .doc(userId)
+                  .collection('shoppingLists')
+                  .doc(supermarketName)
+                  .collection('lists')
+                  .doc(listName);
+                await userListRef.set({ items, listName: fetchedListName }, { merge: true });
+              } else {
+                Alert.alert('שגיאה', 'אין לך גישה לרשימה זו.');
+                navigation.goBack();
+              }
+            } else {
+              Alert.alert('שגיאה', 'המסמך לא קיים!');
+              navigation.goBack();
+            }
+          }
+          setLoading(false);
+        });
 
-            return () => unsubscribe();
-        } catch (error) {
-            console.error('Error fetching items:', error);
-            setLoading(false);
-        }
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error fetching items:', error);
+        setLoading(false);
+      }
     };
 
     fetchItems();
-}, [route.params]);
+  }, [route.params]);
 
   const fetchFamilyMembers = async () => {
     const currentUser = auth.currentUser;
@@ -103,11 +105,11 @@ const ShoppingList = () => {
     try {
       const userId = auth.currentUser.uid;
       let listRef;
-  
+
       if (isSharedList) {
         listRef = firestore.collection('sharedLists').doc(listNameState);
         await listRef.update({ items: updatedList });
-  
+
         const sharedDoc = await listRef.get();
         const sharedData = sharedDoc.data();
         for (const sharedUserId of sharedData.sharedWith) {
@@ -127,7 +129,7 @@ const ShoppingList = () => {
           .collection('lists')
           .doc(listNameState);
         await listRef.update({ items: updatedList });
-  
+
         // Ensure the update is reflected in the sharedLists collection if the list is shared
         const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
         await sharedListRef.update({ items: updatedList });
@@ -137,7 +139,16 @@ const ShoppingList = () => {
       Alert.alert('שגיאה', 'עדכון הרשימה נכשל. בבקשה נסה שוב מאוחר יותר.');
     }
   };
-  
+
+  const openItemModal = (item) => {
+    setSelectedItem(item);
+    setShowItemModal(true);
+  };
+
+  const closeItemModal = () => {
+    setSelectedItem(null);
+    setShowItemModal(false);
+  };
 
   const deleteList = async () => {
     try {
@@ -229,16 +240,15 @@ const ShoppingList = () => {
     }
   };
 
-  
+
   const totalPrice = shoppingList.reduce((acc, item) => acc + (parseFloat(item.ItemPrice) * (item.quantity || 1)), 0);
 
   const renderItem = ({ item, index }) => (
-    <View style={styles.item}>
+    <TouchableOpacity onPress={() => openItemModal(item)} style={styles.item}>
       <View>
         <Text style={styles.itemName}>{item.ItemName}</Text>
         <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
         <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
-        {/* <Text style={styles.modifiedBy}>נערך על ידי: {item.modifiedBy}</Text> */}
         <View style={styles.quantityContainer}>
           <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) + 1)}>
             <FontAwesome name='plus' style={styles.quantityIcon} />
@@ -257,9 +267,10 @@ const ShoppingList = () => {
           <FontAwesome name='trash' style={styles.deleteIcon} />
         </TouchableOpacity>
       </View>
-      <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
-    </View>
+      <Image source={{ uri: item.imageUrl || 'https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png' }} style={styles.itemImage} />
+    </TouchableOpacity>
   );
+  
 
   const deleteItem = async (itemToDelete) => {
     try {
@@ -382,6 +393,30 @@ const ShoppingList = () => {
           </View>
         </>
       )}
+      <Modal
+        visible={showItemModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeItemModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {selectedItem && (
+              <>
+                <Image source={{ uri: selectedItem.imageUrl || 'https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png' }} style={styles.modalItemImage} />
+                <Text style={styles.modalItemName}>{selectedItem.ItemName}</Text>
+                <Text style={styles.modalItemCode}>קטגורי: {selectedItem.Category}</Text>
+                <Text style={styles.modalItemPrice}>מחיר: {selectedItem.ItemPrice}</Text>
+                <Text style={styles.modalItemPrice}>{selectedItem.UnitOfMeasurePrice} ₪ ל {selectedItem.UnitOfMeasure}</Text>
+                <Text style={styles.modalItemCode}>קוד מוצר: {selectedItem.ItemCode}</Text>
+                <TouchableOpacity onPress={closeItemModal} style={styles.modalCloseButton}>
+                  <Text style={styles.modalCloseButtonText}>סגור</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -502,7 +537,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 5,
     backgroundColor: '#e9a1a1',
-    borderRadius:5,
+    borderRadius: 5,
     marginBottom: 4,
   },
   buttonIcon: {
@@ -566,6 +601,55 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     paddingHorizontal: 110,
     right: 100,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalItemName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign:'right'
+  },
+  modalItemPrice: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 10,
+    textAlign:'right'
+
+  },
+  modalItemCode: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 10,
+    textAlign:'right'
+
+  },
+  modalItemImage: {
+    height: 100,
+    width: 100,
+    marginBottom: 20,
+    alignSelf:'stretch'
+  },
+  modalCloseButton: {
+    padding: 10,
+    backgroundColor: '#e9a1a1',
+    borderRadius: 5,
+  },
+  modalCloseButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign:'center'
+
   },
 });
 

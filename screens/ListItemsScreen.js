@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Image, View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert, ActivityIndicator, Modal } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
-import { auth, firestore, database } from './../firebase';
+import { auth, firestore } from './../firebase';
 import { getItemsBySupermarket } from './../firebase';
 import CustomPrompt from './../CustomModal/CustomPrompt';
 
@@ -20,6 +20,9 @@ const ListItemsScreen = ({ route }) => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+  const [sortOption, setSortOption] = useState(''); 
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showItemModal, setShowItemModal] = useState(false);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -47,11 +50,40 @@ const ListItemsScreen = ({ route }) => {
     }
   };
 
-  const filteredItems = items.filter(item =>
+  const filteredItems = items
+  .filter(item =>
     (item.ItemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.ItemCode.toLowerCase().includes(searchQuery.toLowerCase())) &&
     (selectedCategory === '' || item.Category === selectedCategory)
-  );
+  )
+  .sort((a, b) => {
+    if (sortOption === 'name') {
+      return a.ItemName.localeCompare(b.ItemName);
+    } else if (sortOption === 'price') {
+      return parseFloat(a.ItemPrice) - parseFloat(b.ItemPrice);
+    }
+    return 0;
+  });
+ 
+  const sortedItems = filteredItems.sort((a, b) => {
+    switch (sortOption) {
+      case 'name':
+        return a.ItemName.localeCompare(b.ItemName);
+      case 'price':
+        return parseFloat(a.ItemPrice) - parseFloat(b.ItemPrice);
+      case 'relevance':
+      default:
+        return b.relevance - a.relevance;
+    }
+  });
+
+  const handleSort = (option) => {
+    setSortOption(option);
+  };
+
+  const clearSort = () => {
+    setSortOption('');
+  };
 
   const addToShoppingList = async (item) => {
     const currentUser = auth.currentUser;
@@ -59,7 +91,7 @@ const ListItemsScreen = ({ route }) => {
       let listRef;
       let updatedList = [];
       let sharedListRef;
-  
+
       if (isSharedList) {
         sharedListRef = firestore.collection('sharedLists').doc(selectedListName);
       } else {
@@ -67,7 +99,7 @@ const ListItemsScreen = ({ route }) => {
         const supermarketRef = userRef.collection('shoppingLists').doc(supermarketName);
         listRef = supermarketRef.collection('lists').doc(selectedListName);
       }
-  
+
       const listSnapshot = isSharedList ? await sharedListRef.get() : await listRef.get();
       if (listSnapshot.exists) {
         updatedList = listSnapshot.data().items || [];
@@ -79,11 +111,10 @@ const ListItemsScreen = ({ route }) => {
         } else {
           updatedList.push({ ...item, quantity: 1, modifiedBy: currentUser.displayName });
         }
-  
+
         if (isSharedList) {
           await sharedListRef.update({ items: updatedList });
-  
-          // Update in users' `shoppingLists` collection
+
           const sharedDoc = await sharedListRef.get();
           const sharedData = sharedDoc.data();
           for (const sharedUserId of sharedData.sharedWith) {
@@ -94,8 +125,7 @@ const ListItemsScreen = ({ route }) => {
           }
         } else {
           await listRef.update({ items: updatedList });
-  
-          // Ensure the update is reflected in the sharedLists collection if the list is shared
+
           const sharedListRef = firestore.collection('sharedLists').doc(selectedListName);
           await sharedListRef.update({ items: updatedList });
         }
@@ -107,13 +137,24 @@ const ListItemsScreen = ({ route }) => {
       Alert.alert('שגיאה', 'שם רשימת הקניות לא הוגדר. בבקשה נסה שוב.');
     }
   };
-  
+
   const comparePrices = (item) => {
     navigation.navigate('ComparePrices', { itemCode: item.ItemCode, itemName: item.ItemName, supermarketName });
   };
 
+  const openItemModal = (item) => {
+    setSelectedItem(item);
+    setShowItemModal(true);
+  };
+  
+  const closeItemModal = () => {
+    setSelectedItem(null);
+    setShowItemModal(false);
+  };
+
   const renderSupermarketItem = ({ item }) => (
-    <View style={styles.itemContainer}>
+    <TouchableOpacity onPress={() => openItemModal(item)} style={styles.item}>
+     <View style={styles.itemContainer}>
       <View style={styles.col}>
         <TouchableOpacity onPress={() => addToShoppingList(item)}>
           <FontAwesome name='plus' size={22} color="gray" />
@@ -128,8 +169,9 @@ const ListItemsScreen = ({ route }) => {
         <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
       </View>
       <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
-
     </View>
+    </TouchableOpacity>
+
   );
 
   return (
@@ -158,19 +200,32 @@ const ListItemsScreen = ({ route }) => {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.sortContainer}>
+
+       <TouchableOpacity style={styles.sortButton} onPress={() => handleSort('name')}>
+          <Text style={styles.sortButtonText}>מיין לפי שם</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.sortButton} onPress={() => handleSort('price')}>
+          <Text style={styles.sortButtonText}>מיין לפי מחיר</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.sortButton } onPress={clearSort}>
+          <Text style={styles.sortButtonText}>ניקוי מיון</Text>
+        </TouchableOpacity>
+  
+      </View>
+
       <TouchableOpacity style={styles.listButton} onPress={() => navigation.navigate('SupermarketLists', { supermarketName })}>
         <FontAwesome name="list" size={24} color="white" style={styles.listIcon} />
         <Text style={styles.listButtonText}>בחר לאיזו רשימה תוסיף או צור רשימה חדשה</Text>
       </TouchableOpacity>
 
-      {/* <Text style={styles.supermarketName}>רשימת המוצרים</Text> */}
-      <Text></Text>
-
       {loading ? (
         <ActivityIndicator size="large" color="#e9a1a1" />
       ) : (
         <FlatList
-          data={filteredItems}
+          data={sortedItems}
           renderItem={renderSupermarketItem}
           keyExtractor={item => item.id.toString()}
         />
@@ -216,9 +271,34 @@ const ListItemsScreen = ({ route }) => {
           </View>
         </View>
       </Modal>
+      <Modal
+        visible={showItemModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeItemModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {selectedItem && (
+              <>
+                <Image source={{ uri: selectedItem.imageUrl || 'https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png' }} style={styles.modalItemImage} />
+                <Text style={styles.modalItemName}>{selectedItem.ItemName}</Text>
+                <Text style={styles.modalItemCode}>קטגורי: {selectedItem.Category}</Text>
+                <Text style={styles.modalItemPrice}>מחיר: {selectedItem.ItemPrice}</Text>
+                <Text style={styles.modalItemPrice}>{selectedItem.UnitOfMeasurePrice} ₪ ל {selectedItem.UnitOfMeasure}</Text>
+                <Text style={styles.modalItemCode}>קוד מוצר: {selectedItem.ItemCode}</Text>
+                <TouchableOpacity onPress={closeItemModal} style={styles.modalCloseButton}>
+                  <Text style={styles.modalCloseButtonText}>סגור</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -228,7 +308,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     marginRight: 20,
-    marginTop: 39
+    marginTop: 39,
   },
   logoContainer: {
     height: 90,
@@ -246,24 +326,24 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 8,
     alignItems: 'center',
-    marginTop: 39
+    marginTop: 39,
   },
   searchInput: {
     flex: 1,
     borderBottomWidth: 1,
     marginBottom: 5,
     textAlign: 'right',
-    fontSize: 13
+    fontSize: 13,
   },
   searchButton: {
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'right',
-    right: 4
+    right: 4,
   },
   navItem: {
     marginLeft: 20,
-    marginTop: 39
+    marginTop: 39,
   },
   navigation: {
     flexDirection: 'row',
@@ -288,7 +368,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
     color: '#464444',
-    fontSize: 22
+    fontSize: 22,
   },
   itemContainer: {
     backgroundColor: '#fff',
@@ -310,13 +390,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     left: 140,
-    marginBottom:10,
-    marginTop:10
+    marginBottom: 10,
+    marginTop: 10,
   },
   backIcon: {
     fontSize: 20,
     color: '#e9a1a1',
-    left: 120
+    left: 120,
   },
   backText: {
     fontSize: 16,
@@ -340,7 +420,7 @@ const styles = StyleSheet.create({
   itemImage: {
     height: 50,
     width: 50,
-    right:10
+    right: 10,
   },
   itemName: {
     fontSize: 16,
@@ -367,18 +447,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#e9a1a1',
     borderRadius: 5,
     alignItems: 'center',
-    marginTop: 20,
     marginHorizontal: 10,
-    marginBottom: 6
+    marginBottom: 6,
   },
   listButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: 'bold',
-    textAlign: 'right'
+    textAlign: 'right',
+    paddingLeft:4
   },
   listIcon: {
-    paddingHorizontal: 10,
+    paddingRight:5
   },
   createListButton: {
     flexDirection: 'row',
@@ -386,13 +466,13 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#e9a1a1',
     borderRadius: 5,
-    margin: 10
+    margin: 10,
   },
   createListButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: 'bold',
-    paddingLeft: 190
+    paddingLeft: 190,
   },
   compareButton: {
     marginLeft: 1,
@@ -423,6 +503,72 @@ const styles = StyleSheet.create({
   modalItemText: {
     fontSize: 16,
   },
+  sortContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginVertical: 10,
+    right:5
+  },
+  sortButton: {
+    padding :5,
+    backgroundColor: '#e9a1a1',
+    borderRadius: 5,
+    marginHorizontal: 5,
+  },
+  sortButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalItemName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign:'right'
+  },
+  modalItemPrice: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 10,
+    textAlign:'right'
+
+  },
+  modalItemCode: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 10,
+    textAlign:'right'
+
+  },
+  modalItemImage: {
+    height: 100,
+    width: 100,
+    marginBottom: 20,
+    alignSelf:'stretch'
+  },
+  modalCloseButton: {
+    padding: 10,
+    backgroundColor: '#e9a1a1',
+    borderRadius: 5,
+  },
+  modalCloseButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign:'center'
+
+  },
 });
 
 export default ListItemsScreen;
+
