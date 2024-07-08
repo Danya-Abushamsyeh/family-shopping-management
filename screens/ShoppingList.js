@@ -108,8 +108,13 @@ const ShoppingList = () => {
 
       if (isSharedList) {
         listRef = firestore.collection('sharedLists').doc(listNameState);
-        await listRef.update({ items: updatedList });
-
+        const listDoc = await listRef.get();
+  
+        if (!listDoc.exists) {
+          await listRef.set({ items: updatedList });
+        } else {
+          await listRef.update({ items: updatedList });
+        } 
         const sharedDoc = await listRef.get();
         const sharedData = sharedDoc.data();
         for (const sharedUserId of sharedData.sharedWith) {
@@ -128,17 +133,30 @@ const ShoppingList = () => {
           .doc(supermarketName)
           .collection('lists')
           .doc(listNameState);
-        await listRef.update({ items: updatedList });
-
+        const listDoc = await listRef.get();
+  
+        if (!listDoc.exists) {
+          await listRef.set({ items: updatedList });
+        } else {
+          await listRef.update({ items: updatedList });
+        }
+  
         // Ensure the update is reflected in the sharedLists collection if the list is shared
         const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
-        await sharedListRef.update({ items: updatedList });
+        const sharedListDoc = await sharedListRef.get();
+  
+        if (sharedListDoc.exists) {
+          await sharedListRef.update({ items: updatedList });
+        } else {
+          await sharedListRef.set({ items: updatedList });
+        }
       }
     } catch (error) {
       console.error('שגיאה בעדכון הרשימה:', error);
       Alert.alert('שגיאה', 'עדכון הרשימה נכשל. בבקשה נסה שוב מאוחר יותר.');
     }
   };
+  
 
   const openItemModal = (item) => {
     setSelectedItem(item);
@@ -229,8 +247,10 @@ const ShoppingList = () => {
           receivedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName, sharedBy: displayName })
         });
       }
+      // Update the current user's received lists as well
       await firestore.collection('users').doc(currentUser.uid).update({
-        sharedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName })
+        sharedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName }),
+        receivedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName, sharedBy: displayName })//????????????????????????????  
       });
       Alert.alert('בוצע', 'הרשימה שותפה בהצלחה.');
       setShareEmail('');
@@ -248,7 +268,7 @@ const ShoppingList = () => {
       <View>
         <Text style={styles.itemName}>{item.ItemName}</Text>
         <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
-        <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
+        <Text style={styles.itemPrice}>מחיר: {item.ItemPrice} ₪</Text>
         <View style={styles.quantityContainer}>
           <TouchableOpacity onPress={() => updateQuantity(index, parseInt(item.quantity || 0) + 1)}>
             <FontAwesome name='plus' style={styles.quantityIcon} />
@@ -406,7 +426,7 @@ const ShoppingList = () => {
                 <Image source={{ uri: selectedItem.imageUrl || 'https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png' }} style={styles.modalItemImage} />
                 <Text style={styles.modalItemName}>{selectedItem.ItemName}</Text>
                 <Text style={styles.modalItemCode}>קטגורי: {selectedItem.Category}</Text>
-                <Text style={styles.modalItemPrice}>מחיר: {selectedItem.ItemPrice}</Text>
+                <Text style={styles.modalItemPrice}>מחיר: {selectedItem.ItemPrice} ₪</Text>
                 <Text style={styles.modalItemPrice}>{selectedItem.UnitOfMeasurePrice} ₪ ל {selectedItem.UnitOfMeasure}</Text>
                 <Text style={styles.modalItemCode}>קוד מוצר: {selectedItem.ItemCode}</Text>
                 <TouchableOpacity onPress={closeItemModal} style={styles.modalCloseButton}>

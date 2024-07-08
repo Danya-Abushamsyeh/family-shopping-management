@@ -299,5 +299,12 @@ export const updateUserProfileImage = async (userId, imageUrl) => {
   }
 };
 
+export const deleteUserProfileImage = async (uid) => {
+  const userRef = firestore.collection('users').doc(uid);
+  await userRef.update({
+    photoURL: firebase.firestore.FieldValue.delete()
+  });
+};
+
 export default firebase;
 

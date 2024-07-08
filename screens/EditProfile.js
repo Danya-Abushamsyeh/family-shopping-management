@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Modal } from 'react-native';
 import firebase from './../firebase';
-import RNPickerSelect from 'react-native-picker-select';
 
 const EditProfileScreen = ({ navigation }) => {
   const [selectedOption, setSelectedOption] = useState('');
@@ -10,6 +9,7 @@ const EditProfileScreen = ({ navigation }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
 
   const handleChangePassword = async () => {
     try {
@@ -50,7 +50,7 @@ const EditProfileScreen = ({ navigation }) => {
       }
 
       Alert.alert('הפרופיל עודכן', 'הפרופיל שלך עודכן בהצלחה');
-      navigation.navigate('פרופיל'); 
+      navigation.navigate('Profile'); 
     } catch (error) {
       Alert.alert('שגיאת עדכון פרופיל', error.message);
     }
@@ -108,16 +108,12 @@ const EditProfileScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>ערוך פרופיל</Text>
 
-      <RNPickerSelect
-        onValueChange={(itemValue) => setSelectedOption(itemValue)}
-        items={[
-          { label: 'שנה את שם התצוגה', value: 'displayName' },
-          { label: 'שנה סיסמא', value: 'password' },
-        ]}
-        style={pickerSelectStyles}
-        value={selectedOption}
-        placeholder={{ label: 'בחר אפשרות', value: '' }}
-      />
+      <TouchableOpacity
+        style={styles.selectorButton}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={styles.selectorButtonText}>מה ברוצונך לשנות/לעדכן ? </Text>
+      </TouchableOpacity>
 
       {selectedOption && (
         <View style={styles.inputContainer}>
@@ -127,40 +123,49 @@ const EditProfileScreen = ({ navigation }) => {
             style={styles.button}
             onPress={selectedOption === 'password' ? handleChangePassword : handleUpdateProfile}
           >
-            <Text style={styles.buttonText}>{selectedOption === 'password' ? 'שנה סיסמא' : 'עדכן פרופיל'}</Text>
+            <Text style={styles.buttonText}>{selectedOption === 'password' ? 'שנה סיסמא' : 'שמירה'}</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      <Modal
+        transparent={true}
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => { setSelectedOption('displayName'); setModalVisible(false); }}
+            >
+              <Text style={styles.modalOptionText}>שנה את שם התצוגה</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => { setSelectedOption('email'); setModalVisible(false); }}
+            >
+              <Text style={styles.modalOptionText}>שנה מייל</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => { setSelectedOption('password'); setModalVisible(false); }}
+            >
+              <Text style={styles.modalOptionText}>שנה סיסמא</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalOption, styles.modalCancel]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.modalOptionText}>בטל</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
-
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
-    fontSize: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: 'gray',
-    borderRadius: 4,
-    color: 'black',
-    paddingRight: 30,
-    marginBottom: 20, 
-    textAlign: 'right'
-  },
-  inputAndroid: {
-    fontSize: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 0.5,
-    borderColor: 'gray',
-    borderRadius: 8,
-    color: 'black',
-    paddingRight: 30,
-    marginBottom: 20, 
-    textAlign: 'right'
-  },
-});
 
 const styles = StyleSheet.create({
   container: {
@@ -168,14 +173,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+    backgroundColor: '#f5f5f5',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 30,
+  },
+  selectorButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    paddingVertical: 10,
+    paddingHorizontal: 50,
+    borderRadius: 10,
+    marginBottom: 30,
+  },
+  selectorButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   inputContainer: {
-    marginTop: 20, 
+    marginTop: 20,
     width: '100%',
     alignItems: 'center',
   },
@@ -187,8 +205,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 20,
     paddingLeft: 10,
-    textAlign:'right',
-    
+    textAlign: 'right',
   },
   button: {
     backgroundColor: '#635A5A',
@@ -196,13 +213,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     width: '100%',
     alignItems: 'center',
-    borderRadius: 99,
+    borderRadius: 10,
     marginTop: 20,
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalOption: {
+    width: '100%',
+    padding: 10,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: '#635A5A',
+  },
+  modalCancel: {
+    borderBottomWidth: 0,
+    marginTop: 10,
   },
 });
 

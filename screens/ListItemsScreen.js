@@ -166,7 +166,7 @@ const ListItemsScreen = ({ route }) => {
       <View style={styles.texttext}>
         <Text style={styles.itemName}>{item.ItemName}</Text>
         <Text style={styles.ItemCode}>קוד המוצר: {item.ItemCode}</Text>
-        <Text style={styles.itemPrice}>מחיר: {item.ItemPrice}</Text>
+        <Text style={styles.itemPrice}>מחיר: {item.ItemPrice} ₪</Text>
       </View>
       <Image source={{ uri: item.imageUrl || ('https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png') }} style={styles.itemImage} />
     </View>
@@ -284,7 +284,7 @@ const ListItemsScreen = ({ route }) => {
                 <Image source={{ uri: selectedItem.imageUrl || 'https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png' }} style={styles.modalItemImage} />
                 <Text style={styles.modalItemName}>{selectedItem.ItemName}</Text>
                 <Text style={styles.modalItemCode}>קטגורי: {selectedItem.Category}</Text>
-                <Text style={styles.modalItemPrice}>מחיר: {selectedItem.ItemPrice}</Text>
+                <Text style={styles.modalItemPrice}>מחיר: {selectedItem.ItemPrice} ₪</Text>
                 <Text style={styles.modalItemPrice}>{selectedItem.UnitOfMeasurePrice} ₪ ל {selectedItem.UnitOfMeasure}</Text>
                 <Text style={styles.modalItemCode}>קוד מוצר: {selectedItem.ItemCode}</Text>
                 <TouchableOpacity onPress={closeItemModal} style={styles.modalCloseButton}>

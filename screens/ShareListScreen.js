@@ -12,19 +12,15 @@ const ShareList = () => {
 
   const fetchLists = async () => {
     const currentUser = auth.currentUser;
-  
     if (currentUser) {
       try {
         const userRef = firestore.collection('users').doc(currentUser.uid);
         const userDoc = await userRef.get();
         const userData = userDoc.data();
-  
         const sharedListsData = [];
         const receivedListsData = [];
   
-        // Fetch both shared and received lists
         await Promise.all([
-          // Fetch shared lists
           ...(userData.sharedLists || []).map(async ({ listName, supermarketName }) => {
             const sharedListRef = firestore.collection('sharedLists').doc(listName);
             const sharedDoc = await sharedListRef.get();
@@ -35,7 +31,6 @@ const ShareList = () => {
             }
           }),
   
-          // Fetch received lists
           ...(userData.receivedLists || []).map(async ({ listName, supermarketName, sharedBy }) => {
             const receivedListRef = firestore.collection('sharedLists').doc(listName);
             const receivedDoc = await receivedListRef.get();
