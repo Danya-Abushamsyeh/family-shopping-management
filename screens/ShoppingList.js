@@ -24,7 +24,6 @@ const ShoppingList = () => {
     const fetchItems = async () => {
       try {
         const userId = auth.currentUser.uid;
-
         const listDocRef = firestore
           .collection('users')
           .doc(userId)
@@ -32,7 +31,7 @@ const ShoppingList = () => {
           .doc(supermarketName)
           .collection('lists')
           .doc(listName);
-
+  
         const unsubscribe = listDocRef.onSnapshot(async (doc) => {
           if (doc.exists) {
             const { items, listName: fetchedListName } = doc.data();
@@ -41,44 +40,48 @@ const ShoppingList = () => {
             setIsSharedList(false);
           } else {
             const sharedListRef = firestore.collection('sharedLists').doc(listName);
-            const sharedDoc = await sharedListRef.get();
-            if (sharedDoc.exists) {
-              const { items, listName: fetchedListName, sharedWith } = sharedDoc.data();
-              if (sharedWith.some(member => member.id === userId)) {
-                setShoppingList(items || []);
-                setListNameState(fetchedListName || listName);
-                setIsSharedList(true);
-
-                // Update user's `shoppingLists` collection
-                const userListRef = firestore
-                  .collection('users')
-                  .doc(userId)
-                  .collection('shoppingLists')
-                  .doc(supermarketName)
-                  .collection('lists')
-                  .doc(listName);
-                await userListRef.set({ items, listName: fetchedListName }, { merge: true });
+            const sharedUnsubscribe = sharedListRef.onSnapshot(async (sharedDoc) => {
+              if (sharedDoc.exists) {
+                const { items, listName: fetchedListName, sharedWith } = sharedDoc.data();
+                if (sharedWith.some(member => member.id === userId)) {
+                  setShoppingList(items || []);
+                  setListNameState(fetchedListName || listName);
+                  setIsSharedList(true);
+  
+                  // Update user's `shoppingLists` collection
+                  const userListRef = firestore
+                    .collection('users')
+                    .doc(userId)
+                    .collection('shoppingLists')
+                    .doc(supermarketName)
+                    .collection('lists')
+                    .doc(listName);
+                  await userListRef.set({ items, listName: fetchedListName }, { merge: true });
+                } else {
+                  Alert.alert('שגיאה', 'אין לך גישה לרשימה זו.');
+                  navigation.goBack();
+                }
               } else {
-                Alert.alert('שגיאה', 'אין לך גישה לרשימה זו.');
+                Alert.alert('שגיאה', 'המסמך לא קיים!');
                 navigation.goBack();
               }
-            } else {
-              Alert.alert('שגיאה', 'המסמך לא קיים!');
-              navigation.goBack();
-            }
+            });
+  
+            return () => sharedUnsubscribe();
           }
           setLoading(false);
         });
-
+  
         return () => unsubscribe();
       } catch (error) {
         console.error('Error fetching items:', error);
         setLoading(false);
       }
     };
-
+  
     fetchItems();
   }, [route.params]);
+  
 
   const fetchFamilyMembers = async () => {
     const currentUser = auth.currentUser;
@@ -103,59 +106,24 @@ const ShoppingList = () => {
 
   const updateList = async (updatedList) => {
     try {
-      const userId = auth.currentUser.uid;
-      let listRef;
-
-      if (isSharedList) {
-        listRef = firestore.collection('sharedLists').doc(listNameState);
-        const listDoc = await listRef.get();
+      const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
+      await sharedListRef.update({ items: updatedList });
   
-        if (!listDoc.exists) {
-          await listRef.set({ items: updatedList });
-        } else {
-          await listRef.update({ items: updatedList });
-        } 
-        const sharedDoc = await listRef.get();
-        const sharedData = sharedDoc.data();
-        for (const sharedUserId of sharedData.sharedWith) {
-          if (sharedUserId.id !== userId) {
-            const sharedUserRef = firestore.collection('users').doc(sharedUserId.id);
-            const supermarketRef = sharedUserRef.collection('shoppingLists').doc(supermarketName);
-            const userListRef = supermarketRef.collection('lists').doc(listNameState);
-            await userListRef.set({ items: updatedList }, { merge: true });
-          }
-        }
-      } else {
-        listRef = firestore
-          .collection('users')
-          .doc(userId)
-          .collection('shoppingLists')
-          .doc(supermarketName)
-          .collection('lists')
-          .doc(listNameState);
-        const listDoc = await listRef.get();
-  
-        if (!listDoc.exists) {
-          await listRef.set({ items: updatedList });
-        } else {
-          await listRef.update({ items: updatedList });
-        }
-  
-        // Ensure the update is reflected in the sharedLists collection if the list is shared
-        const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
-        const sharedListDoc = await sharedListRef.get();
-  
-        if (sharedListDoc.exists) {
-          await sharedListRef.update({ items: updatedList });
-        } else {
-          await sharedListRef.set({ items: updatedList });
-        }
+      // Sync the updated list with all users' private lists
+      const sharedDoc = await sharedListRef.get();
+      const sharedData = sharedDoc.data();
+      for (const sharedUser of sharedData.sharedWith) {
+        const sharedUserRef = firestore.collection('users').doc(sharedUser.id);
+        const supermarketRef = sharedUserRef.collection('shoppingLists').doc(supermarketName);
+        const userListRef = supermarketRef.collection('lists').doc(listNameState);
+        await userListRef.set({ items: updatedList }, { merge: true });
       }
     } catch (error) {
       console.error('שגיאה בעדכון הרשימה:', error);
       Alert.alert('שגיאה', 'עדכון הרשימה נכשל. בבקשה נסה שוב מאוחר יותר.');
     }
   };
+  
   
 
   const openItemModal = (item) => {
@@ -210,12 +178,12 @@ const ShoppingList = () => {
       Alert.alert('שגיאה', 'אנא בחר בן משפחה לשתף איתו את הרשימה או שתף עם כולם.');
       return;
     }
-
+  
     try {
       const currentUser = auth.currentUser;
       const userDoc = await firestore.collection('users').doc(currentUser.uid).get();
       const displayName = userDoc.data().displayName;
-
+  
       let membersToShareWith = [];
       if (shareWithAll) {
         membersToShareWith = familyMembers.map(member => ({ id: member.id, displayName: member.displayName }));
@@ -224,7 +192,7 @@ const ShoppingList = () => {
         const familyMemberData = familyMemberDoc.data();
         membersToShareWith = [{ id: selectedFamilyMember, displayName: familyMemberData.displayName }];
       }
-
+  
       const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
       const doc = await sharedListRef.get();
       if (doc.exists) {
@@ -250,7 +218,7 @@ const ShoppingList = () => {
       // Update the current user's received lists as well
       await firestore.collection('users').doc(currentUser.uid).update({
         sharedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName }),
-        receivedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName, sharedBy: displayName })//????????????????????????????  
+        receivedLists: fieldValue.arrayUnion({ listName: listNameState, supermarketName, sharedBy: displayName })
       });
       Alert.alert('בוצע', 'הרשימה שותפה בהצלחה.');
       setShareEmail('');
@@ -259,7 +227,8 @@ const ShoppingList = () => {
       Alert.alert('שגיאה', 'נכשל בשיתוף הרשימה. בבקשה נסה שוב מאוחר יותר.');
     }
   };
-
+  
+  
 
   const totalPrice = shoppingList.reduce((acc, item) => acc + (parseFloat(item.ItemPrice) * (item.quantity || 1)), 0);
 
@@ -491,8 +460,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   itemImage: {
-    height: 60,
-    width: 60,
+    height: 50,
+    width: 50,
+    alignSelf:'center',
+    left:15
   },
   itemName: {
     fontSize: 16,

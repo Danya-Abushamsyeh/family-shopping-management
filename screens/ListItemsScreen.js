@@ -106,10 +106,10 @@ const ListItemsScreen = ({ route }) => {
         const existingItem = updatedList.find(i => i.ItemCode === item.ItemCode);
         if (existingItem) {
           updatedList = updatedList.map(i =>
-            i.ItemCode === item.ItemCode ? { ...i, quantity: (i.quantity || 1) + 1, modifiedBy: currentUser.displayName } : i
+            i.ItemCode === item.ItemCode ? { ...i, quantity: (i.quantity || 1) + 1} : i
           );
         } else {
-          updatedList.push({ ...item, quantity: 1, modifiedBy: currentUser.displayName });
+          updatedList.push({ ...item, quantity: 1 });
         }
 
         if (isSharedList) {

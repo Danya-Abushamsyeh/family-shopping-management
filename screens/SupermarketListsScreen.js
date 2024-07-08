@@ -135,10 +135,10 @@ const SupermarketListsScreen = () => {
         <FontAwesome name='cart-plus' size={22} color="white" />
         <Text style={styles.createListButtonText}>ליצור רשימה חדשה</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('ListItems', { supermarketName })} style={styles.backButton}>
+      {/* <TouchableOpacity onPress={() => navigation.navigate('ListItems', { supermarketName })} style={styles.backButton}>
         <FontAwesome name="arrow-left" style={styles.backIcon} />
         <Text style={styles.backText}>חזור לרשימת המוצרים</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };
