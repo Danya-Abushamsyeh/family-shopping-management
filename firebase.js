@@ -66,7 +66,7 @@ export const fieldValue = firebase.firestore.FieldValue;
 // };
 
 // export const updateProductImages = async () => {
-//   const supermarketNames = ['Victory'];
+//   const supermarketNames = ['Ramilevi','Yochananof', 'Osherad', 'Ramilevi', 'Shupersal', 'Tivtaam','Victory'];
 //   const batchSize = 5;
 //   const maxRetry = 5;
 
