@@ -91,7 +91,7 @@ const ListItemsScreen = ({ route }) => {
       let listRef;
       let updatedList = [];
       let sharedListRef;
-
+  
       if (isSharedList) {
         sharedListRef = firestore.collection('sharedLists').doc(selectedListName);
       } else {
@@ -99,7 +99,7 @@ const ListItemsScreen = ({ route }) => {
         const supermarketRef = userRef.collection('shoppingLists').doc(supermarketName);
         listRef = supermarketRef.collection('lists').doc(selectedListName);
       }
-
+  
       const listSnapshot = isSharedList ? await sharedListRef.get() : await listRef.get();
       if (listSnapshot.exists) {
         updatedList = listSnapshot.data().items || [];
@@ -111,21 +111,23 @@ const ListItemsScreen = ({ route }) => {
         } else {
           updatedList.push({ ...item, quantity: 1 });
         }
-
+  
         if (isSharedList) {
           await sharedListRef.update({ items: updatedList });
-
+  
           const sharedDoc = await sharedListRef.get();
           const sharedData = sharedDoc.data();
-          for (const sharedUserId of sharedData.sharedWith) {
-            const sharedUserRef = firestore.collection('users').doc(sharedUserId.id);
+          const allUsers = [...sharedData.sharedWith, { id: sharedData.sharedBy }]; // Include the creator
+  
+          for (const sharedUser of allUsers) {
+            const sharedUserRef = firestore.collection('users').doc(sharedUser.id);
             const supermarketRef = sharedUserRef.collection('shoppingLists').doc(supermarketName);
             const userListRef = supermarketRef.collection('lists').doc(selectedListName);
             await userListRef.set({ items: updatedList }, { merge: true });
           }
         } else {
           await listRef.update({ items: updatedList });
-
+  
           const sharedListRef = firestore.collection('sharedLists').doc(selectedListName);
           await sharedListRef.update({ items: updatedList });
         }
@@ -137,6 +139,8 @@ const ListItemsScreen = ({ route }) => {
       Alert.alert('שגיאה', 'שם רשימת הקניות לא הוגדר. בבקשה נסה שוב.');
     }
   };
+  
+  
 
   const comparePrices = (item) => {
     navigation.navigate('ComparePrices', { itemCode: item.ItemCode, itemName: item.ItemName, supermarketName });
@@ -494,6 +498,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    alignSelf:'center'
   },
   modalItem: {
     padding: 10,

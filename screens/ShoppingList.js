@@ -19,6 +19,8 @@ const ShoppingList = () => {
   const [shareWithAll, setShareWithAll] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showItemModal, setShowItemModal] = useState(false);
+  const [lastModifiedBy, setLastModifiedBy] = useState('');
+  const [lastModifiedAt, setLastModifiedAt] = useState(null);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -31,23 +33,27 @@ const ShoppingList = () => {
           .doc(supermarketName)
           .collection('lists')
           .doc(listName);
-  
+
         const unsubscribe = listDocRef.onSnapshot(async (doc) => {
           if (doc.exists) {
-            const { items, listName: fetchedListName } = doc.data();
+            const { items, listName: fetchedListName, lastModifiedBy, lastModifiedAt } = doc.data();
             setShoppingList(items || []);
             setListNameState(fetchedListName || listName);
+            setLastModifiedBy(lastModifiedBy || '');
+            setLastModifiedAt(lastModifiedAt ? lastModifiedAt.toDate() : null);
             setIsSharedList(false);
           } else {
             const sharedListRef = firestore.collection('sharedLists').doc(listName);
             const sharedUnsubscribe = sharedListRef.onSnapshot(async (sharedDoc) => {
               if (sharedDoc.exists) {
-                const { items, listName: fetchedListName, sharedWith } = sharedDoc.data();
+                const { items, listName: fetchedListName, sharedWith, lastModifiedBy, lastModifiedAt } = sharedDoc.data();
                 if (sharedWith.some(member => member.id === userId)) {
                   setShoppingList(items || []);
                   setListNameState(fetchedListName || listName);
+                  setLastModifiedBy(lastModifiedBy || '');
+                  setLastModifiedAt(lastModifiedAt ? lastModifiedAt.toDate() : null);
                   setIsSharedList(true);
-  
+
                   // Update user's `shoppingLists` collection
                   const userListRef = firestore
                     .collection('users')
@@ -56,7 +62,7 @@ const ShoppingList = () => {
                     .doc(supermarketName)
                     .collection('lists')
                     .doc(listName);
-                  await userListRef.set({ items, listName: fetchedListName }, { merge: true });
+                  await userListRef.set({ items, listName: fetchedListName, lastModifiedBy, lastModifiedAt }, { merge: true });
                 } else {
                   Alert.alert('שגיאה', 'אין לך גישה לרשימה זו.');
                   navigation.goBack();
@@ -66,22 +72,21 @@ const ShoppingList = () => {
                 navigation.goBack();
               }
             });
-  
+
             return () => sharedUnsubscribe();
           }
           setLoading(false);
         });
-  
+
         return () => unsubscribe();
       } catch (error) {
         console.error('Error fetching items:', error);
         setLoading(false);
       }
     };
-  
+
     fetchItems();
   }, [route.params]);
-  
 
   const fetchFamilyMembers = async () => {
     const currentUser = auth.currentUser;
@@ -105,26 +110,60 @@ const ShoppingList = () => {
   );
 
   const updateList = async (updatedList) => {
-    try {
-      const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
-      await sharedListRef.update({ items: updatedList });
-  
+  try {
+    const currentUser = auth.currentUser;
+    const userDoc = await firestore.collection('users').doc(currentUser.uid).get();
+    const displayName = userDoc.data().displayName;
+    const timestamp = new Date();
+    const uid =  currentUser.uid;
+    const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
+    const sharedDoc = await sharedListRef.get();
+
+    if (sharedDoc.exists) {
+      // Update shared list
+      await sharedListRef.update({
+        items: updatedList,
+        lastModifiedBy: displayName,
+        lastModifiedAt: timestamp
+      });
+
       // Sync the updated list with all users' private lists
-      const sharedDoc = await sharedListRef.get();
       const sharedData = sharedDoc.data();
-      for (const sharedUser of sharedData.sharedWith) {
-        const sharedUserRef = firestore.collection('users').doc(sharedUser.id);
-        const supermarketRef = sharedUserRef.collection('shoppingLists').doc(supermarketName);
+      const allUsers = [...sharedData.sharedWith, {id:uid}]; // Include the creator
+
+      for (const user of allUsers) {
+        const userRef = firestore.collection('users').doc(user.id);
+        const supermarketRef = userRef.collection('shoppingLists').doc(supermarketName);
         const userListRef = supermarketRef.collection('lists').doc(listNameState);
-        await userListRef.set({ items: updatedList }, { merge: true });
+        await userListRef.set({
+          items: updatedList,
+          lastModifiedBy: displayName,
+          lastModifiedAt: timestamp
+        }, { merge: true });
       }
-    } catch (error) {
-      console.error('שגיאה בעדכון הרשימה:', error);
-      Alert.alert('שגיאה', 'עדכון הרשימה נכשל. בבקשה נסה שוב מאוחר יותר.');
+    } else {
+      // Update private list
+      const userListRef = firestore
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('shoppingLists')
+        .doc(supermarketName)
+        .collection('lists')
+        .doc(listNameState);
+
+      await userListRef.set({
+        items: updatedList,
+        lastModifiedBy: displayName,
+        lastModifiedAt: timestamp
+      }, { merge: true });
     }
-  };
-  
-  
+
+  } catch (error) {
+    console.error('שגיאה בעדכון הרשימה:', error);
+    Alert.alert('שגיאה', 'עדכון הרשימה נכשל. בבקשה נסה שוב מאוחר יותר.');
+  }
+};
+
 
   const openItemModal = (item) => {
     setSelectedItem(item);
@@ -172,7 +211,6 @@ const ShoppingList = () => {
       Alert.alert('שגיאה', 'מחיקת הרשימה נכשלה. בבקשה נסה שוב מאוחר יותר.');
     }
   };
-
   const shareList = async () => {
     if (!selectedFamilyMember && !shareWithAll) {
       Alert.alert('שגיאה', 'אנא בחר בן משפחה לשתף איתו את הרשימה או שתף עם כולם.');
@@ -199,7 +237,9 @@ const ShoppingList = () => {
         await sharedListRef.update({
           sharedWith: fieldValue.arrayUnion(...membersToShareWith),
           items: shoppingList,
-          sharedBy: displayName
+          sharedBy: displayName,
+          lastModifiedBy: displayName,
+          lastModifiedAt: new Date()
         });
       } else {
         await sharedListRef.set({
@@ -207,7 +247,9 @@ const ShoppingList = () => {
           items: shoppingList,
           listName: listNameState,
           supermarketName,
-          sharedBy: displayName
+          sharedBy: displayName,
+          lastModifiedBy: displayName,
+          lastModifiedAt: new Date()
         });
       }
       for (const member of membersToShareWith) {
@@ -228,8 +270,6 @@ const ShoppingList = () => {
     }
   };
   
-  
-
   const totalPrice = shoppingList.reduce((acc, item) => acc + (parseFloat(item.ItemPrice) * (item.quantity || 1)), 0);
 
   const renderItem = ({ item, index }) => (
@@ -259,7 +299,11 @@ const ShoppingList = () => {
       <Image source={{ uri: item.imageUrl || 'https://blog.greendot.org/wp-content/uploads/sites/13/2021/09/placeholder-image.png' }} style={styles.itemImage} />
     </TouchableOpacity>
   );
-  
+
+  const formatDate = (date) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return date.toLocaleDateString('he-IL', options);
+  };
 
   const deleteItem = async (itemToDelete) => {
     try {
@@ -323,17 +367,26 @@ const ShoppingList = () => {
             <FontAwesome name="arrow-left" style={styles.backIcon} />
             <Text style={styles.backText}>חזור לרשימת המוצרים</Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
-              <FontAwesome name="trash" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>שמור את הכל</Text>
+{/* 
+          <TouchableOpacity onPress={saveShoppingList} style={styles.button}>
+              <FontAwesome name="save" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>שמור</Text>
             </TouchableOpacity> */}
 
           <Text style={styles.title}>{listNameState}</Text>
+          {lastModifiedBy && (
+            <View style={styles.lastModifiedContainer}>
+              <Text style={styles.lastModifiedText}>
+                אחרון ששונה על ידי: {lastModifiedBy} בתאריך: {lastModifiedAt ? formatDate(lastModifiedAt) : ''}
+              </Text>
+            </View>
+          )}
           <FlatList
             data={shoppingList}
             renderItem={renderItem}
             keyExtractor={(item, index) => `${item.id}-${index}`}
           />
+          
           <View style={styles.totalContainer}>
             <Text style={styles.totalText}>סה"כ: {totalPrice.toFixed(2)} ₪</Text>
           </View>
@@ -446,7 +499,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 25,
     marginTop: 16,
     elevation: 2,
   },
@@ -462,8 +515,8 @@ const styles = StyleSheet.create({
   itemImage: {
     height: 50,
     width: 50,
-    alignSelf:'center',
-    left:15
+    alignSelf: 'center',
+    left: 15
   },
   itemName: {
     fontSize: 16,
@@ -530,7 +583,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e9a1a1',
     borderRadius: 5,
     marginBottom: 4,
-    
+
   },
   buttonIcon: {
     fontSize: 13,
@@ -610,27 +663,27 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    textAlign:'right'
+    textAlign: 'right'
   },
   modalItemPrice: {
     fontSize: 16,
     color: '#555',
     marginBottom: 10,
-    textAlign:'right'
+    textAlign: 'right'
 
   },
   modalItemCode: {
     fontSize: 14,
     color: '#555',
     marginBottom: 10,
-    textAlign:'right'
+    textAlign: 'right'
 
   },
   modalItemImage: {
     height: 100,
     width: 100,
     marginBottom: 20,
-    alignSelf:'stretch'
+    alignSelf: 'stretch'
   },
   modalCloseButton: {
     padding: 10,
@@ -640,8 +693,20 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    textAlign:'center'
+    textAlign: 'center'
 
+  },
+  lastModifiedContainer: {
+    padding: 5,
+    backgroundColor: '#f1f1f1',
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  lastModifiedText: {
+    fontSize: 12,
+    color: '#555',
+    fontStyle: 'italic',
+    marginBottom: 5
   },
 });
 

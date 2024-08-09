@@ -9,7 +9,7 @@ const ComparePricesScreen = () => {
   const navigation = useNavigation();
   const { itemCode, itemName, supermarketName } = route.params;
   const [comparisonResults, setComparisonResults] = useState([]);
-  const [cheapestSupermarket, setCheapestSupermarket] = useState('');
+  const [cheapestSupermarkets, setCheapestSupermarkets] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchComparisonResults = async () => {
@@ -23,8 +23,9 @@ const ComparePricesScreen = () => {
       setComparisonResults(results);
 
       if (results.length > 0) {
-        const cheapest = results.reduce((prev, curr) => (prev.itemPrice < curr.itemPrice ? prev : curr));
-        setCheapestSupermarket(cheapest.supermarket);
+        const cheapestPrice = Math.min(...results.map(result => parseFloat(result.itemPrice)));
+        const cheapest = results.filter(result => parseFloat(result.itemPrice) === cheapestPrice);
+        setCheapestSupermarkets(cheapest);
       }
     } catch (error) {
       console.error('Error fetching items:', error);
@@ -70,11 +71,17 @@ const ComparePricesScreen = () => {
             renderItem={renderComparisonItem}
             keyExtractor={(item, index) => `${item.supermarket}-${item.itemCode}-${index}`}
           />
-          {cheapestSupermarket ? (
+          {cheapestSupermarkets.length > 0 && (
             <View style={styles.adviceContainer}>
-              <Text style={styles.adviceText}>המחיר הזול ביותר נמצא ב: {cheapestSupermarket}. אם אתם מחפשים את המחיר הזול ביותר, לכו לשם.</Text>
+              {cheapestSupermarkets.length === 1 ? (
+                <Text style={styles.adviceText}>המחיר הזול ביותר נמצא ב: {cheapestSupermarkets[0].supermarket}. אם אתם מחפשים את המחיר הזול ביותר, לכו לשם.</Text>
+              ) : (
+                <Text style={styles.adviceText}>
+                  המחיר הזול ביותר נמצא ב: {cheapestSupermarkets.map(s => s.supermarket).join(', ')}. בחרו את הסופר הקרוב אליכם או המועדף עליכם.
+                </Text>
+              )}
             </View>
-          ) : null}
+          )}
         </>
       )}
 
@@ -85,7 +92,6 @@ const ComparePricesScreen = () => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
