@@ -43,6 +43,8 @@ const ShoppingList = () => {
             setLastModifiedAt(lastModifiedAt ? lastModifiedAt.toDate() : null);
             setIsSharedList(false);
           } else {
+            // If the list doesn't exist in the user's shoppingLists collection,
+            // subscribe to the sharedLists collection
             const sharedListRef = firestore.collection('sharedLists').doc(listName);
             const sharedUnsubscribe = sharedListRef.onSnapshot(async (sharedDoc) => {
               if (sharedDoc.exists) {
@@ -64,11 +66,11 @@ const ShoppingList = () => {
                     .doc(listName);
                   await userListRef.set({ items, listName: fetchedListName, lastModifiedBy, lastModifiedAt }, { merge: true });
                 } else {
-                  Alert.alert('שגיאה', 'אין לך גישה לרשימה זו.');
+                  Alert.alert('Error', 'You do not have access to this list.');
                   navigation.goBack();
                 }
               } else {
-                Alert.alert('שגיאה', 'המסמך לא קיים!');
+                Alert.alert('Error', 'Document does not exist!');
                 navigation.goBack();
               }
             });
@@ -87,6 +89,7 @@ const ShoppingList = () => {
 
     fetchItems();
   }, [route.params]);
+
 
   const fetchFamilyMembers = async () => {
     const currentUser = auth.currentUser;
@@ -110,60 +113,59 @@ const ShoppingList = () => {
   );
 
   const updateList = async (updatedList) => {
-  try {
-    const currentUser = auth.currentUser;
-    const userDoc = await firestore.collection('users').doc(currentUser.uid).get();
-    const displayName = userDoc.data().displayName;
-    const timestamp = new Date();
-    const uid =  currentUser.uid;
-    const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
-    const sharedDoc = await sharedListRef.get();
-
-    if (sharedDoc.exists) {
-      // Update shared list
-      await sharedListRef.update({
-        items: updatedList,
-        lastModifiedBy: displayName,
-        lastModifiedAt: timestamp
-      });
-
-      // Sync the updated list with all users' private lists
-      const sharedData = sharedDoc.data();
-      const allUsers = [...sharedData.sharedWith,{ ...sharedData.sharedBy ,id: uid }];
-
-      for (const user of allUsers) {
-        const userRef = firestore.collection('users').doc(user.id);
-        const supermarketRef = userRef.collection('shoppingLists').doc(supermarketName);
-        const userListRef = supermarketRef.collection('lists').doc(listNameState);
+    try {
+      const currentUser = auth.currentUser;
+      const userDoc = await firestore.collection('users').doc(currentUser.uid).get();
+      const displayName = userDoc.data().displayName;
+      const timestamp = new Date();
+      const uid = currentUser.uid;
+      const sharedListRef = firestore.collection('sharedLists').doc(listNameState);
+      const sharedDoc = await sharedListRef.get();
+  
+      if (sharedDoc.exists) {
+        // Update shared list
+        await sharedListRef.update({
+          items: updatedList,
+          lastModifiedBy: displayName,
+          lastModifiedAt: timestamp
+        });
+  
+        // Sync the updated list with all users' private lists
+        const sharedData = sharedDoc.data();
+        const allUsers = [...sharedData.sharedWith, { id: sharedData.sharedBy.id }, { id: uid }]; // Include the creator
+  
+        for (const user of allUsers) {
+          const userRef = firestore.collection('users').doc(user.id);
+          const supermarketRef = userRef.collection('shoppingLists').doc(supermarketName);
+          const userListRef = supermarketRef.collection('lists').doc(listNameState);
+          await userListRef.set({
+            items: updatedList,
+            lastModifiedBy: displayName,
+            lastModifiedAt: timestamp
+          }, { merge: true });
+        }
+      } else {
+        // Update private list
+        const userListRef = firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('shoppingLists')
+          .doc(supermarketName)
+          .collection('lists')
+          .doc(listNameState);
+  
         await userListRef.set({
           items: updatedList,
           lastModifiedBy: displayName,
           lastModifiedAt: timestamp
         }, { merge: true });
       }
-    } else {
-      // Update private list
-      const userListRef = firestore
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('shoppingLists')
-        .doc(supermarketName)
-        .collection('lists')
-        .doc(listNameState);
-
-      await userListRef.set({
-        items: updatedList,
-        lastModifiedBy: displayName,
-        lastModifiedAt: timestamp
-      }, { merge: true });
+    } catch (error) {
+      console.error('Error updating list:', error);
+      Alert.alert('Error', 'Failed to update the list. Please try again later.');
     }
-
-  } catch (error) {
-    console.error('שגיאה בעדכון הרשימה:', error);
-    Alert.alert('שגיאה', 'עדכון הרשימה נכשל. בבקשה נסה שוב מאוחר יותר.');
-  }
-};
-
+  };
+  
 
   const openItemModal = (item) => {
     setSelectedItem(item);
