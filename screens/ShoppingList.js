@@ -129,7 +129,7 @@ const ShoppingList = () => {
 
       // Sync the updated list with all users' private lists
       const sharedData = sharedDoc.data();
-      const allUsers = [...sharedData.sharedWith, {id:uid}]; // Include the creator
+      const allUsers = [...sharedData.sharedWith,{ ...sharedData.sharedBy ,id: uid }];
 
       for (const user of allUsers) {
         const userRef = firestore.collection('users').doc(user.id);
